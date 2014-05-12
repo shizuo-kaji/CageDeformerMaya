@@ -1,0 +1,510 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2AA6F2161920C94E005B4AF8 /* cageDeformer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA6F2151920C94E005B4AF8 /* cageDeformer.cpp */; };
+		2AA6F2181920C94E005B4AF8 /* StdAfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA6F2171920C94E005B4AF8 /* StdAfx.cpp */; };
+		2AA6F2211920CA42005B4AF8 /* cageDeformer.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AA6F2201920CA42005B4AF8 /* cageDeformer.h */; };
+		2AA6F22B1920CDC0005B4AF8 /* cageDeformerARAP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA6F22A1920CDC0005B4AF8 /* cageDeformerARAP.cpp */; };
+		2AA6F22D1920CDC0005B4AF8 /* StdAfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA6F22C1920CDC0005B4AF8 /* StdAfx.cpp */; };
+		2AA6F2341920CE47005B4AF8 /* cageDeformerARAP.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AA6F2331920CE47005B4AF8 /* cageDeformerARAP.h */; };
+		2AA6F2371920CEEB005B4AF8 /* cageDeformerARAP.bundle in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2AA6F2281920CDC0005B4AF8 /* cageDeformerARAP.bundle */; };
+		2AA6F2391920CEFB005B4AF8 /* cageDeformer.bundle in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2AA6F2121920C94E005B4AF8 /* cageDeformer.bundle */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2AA6F2361920CEBF005B4AF8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "/Users/Shared/Autodesk/maya/plug-ins";
+			dstSubfolderSpec = 0;
+			files = (
+				2AA6F2371920CEEB005B4AF8 /* cageDeformerARAP.bundle in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AA6F2381920CEF4005B4AF8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "/Users/Shared/Autodesk/maya/plug-ins";
+			dstSubfolderSpec = 0;
+			files = (
+				2AA6F2391920CEFB005B4AF8 /* cageDeformer.bundle in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2AA6F2121920C94E005B4AF8 /* cageDeformer.bundle */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = cageDeformer.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		2AA6F2151920C94E005B4AF8 /* cageDeformer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cageDeformer.cpp; sourceTree = "<group>"; };
+		2AA6F2171920C94E005B4AF8 /* StdAfx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StdAfx.cpp; sourceTree = "<group>"; };
+		2AA6F2191920C94E005B4AF8 /* StdAfx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StdAfx.h; sourceTree = "<group>"; };
+		2AA6F21A1920C94E005B4AF8 /* mayaHeaders.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mayaHeaders.h; sourceTree = "<group>"; };
+		2AA6F2201920CA42005B4AF8 /* cageDeformer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cageDeformer.h; sourceTree = "<group>"; };
+		2AA6F2281920CDC0005B4AF8 /* cageDeformerARAP.bundle */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = cageDeformerARAP.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		2AA6F22A1920CDC0005B4AF8 /* cageDeformerARAP.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cageDeformerARAP.cpp; sourceTree = "<group>"; };
+		2AA6F22C1920CDC0005B4AF8 /* StdAfx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StdAfx.cpp; sourceTree = "<group>"; };
+		2AA6F22E1920CDC1005B4AF8 /* StdAfx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StdAfx.h; sourceTree = "<group>"; };
+		2AA6F22F1920CDC1005B4AF8 /* mayaHeaders.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mayaHeaders.h; sourceTree = "<group>"; };
+		2AA6F2331920CE47005B4AF8 /* cageDeformerARAP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cageDeformerARAP.h; sourceTree = "<group>"; };
+		2AA6F23A1920CF8D005B4AF8 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		2AA6F23B1920CF8D005B4AF8 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
+		2AA6F23C1920D82F005B4AF8 /* affinelib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = affinelib.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2AA6F20F1920C94E005B4AF8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AA6F2251920CDC0005B4AF8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2AA6F2091920C94E005B4AF8 = {
+			isa = PBXGroup;
+			children = (
+				2AA6F23C1920D82F005B4AF8 /* affinelib.h */,
+				2AA6F23A1920CF8D005B4AF8 /* LICENSE */,
+				2AA6F23B1920CF8D005B4AF8 /* README.md */,
+				2AA6F2141920C94E005B4AF8 /* cageDeformer */,
+				2AA6F2291920CDC0005B4AF8 /* cageDeformerARAP */,
+				2AA6F2131920C94E005B4AF8 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2AA6F2131920C94E005B4AF8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2AA6F2121920C94E005B4AF8 /* cageDeformer.bundle */,
+				2AA6F2281920CDC0005B4AF8 /* cageDeformerARAP.bundle */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2AA6F2141920C94E005B4AF8 /* cageDeformer */ = {
+			isa = PBXGroup;
+			children = (
+				2AA6F2201920CA42005B4AF8 /* cageDeformer.h */,
+				2AA6F2151920C94E005B4AF8 /* cageDeformer.cpp */,
+				2AA6F2171920C94E005B4AF8 /* StdAfx.cpp */,
+				2AA6F2191920C94E005B4AF8 /* StdAfx.h */,
+				2AA6F21A1920C94E005B4AF8 /* mayaHeaders.h */,
+			);
+			path = cageDeformer;
+			sourceTree = "<group>";
+		};
+		2AA6F2291920CDC0005B4AF8 /* cageDeformerARAP */ = {
+			isa = PBXGroup;
+			children = (
+				2AA6F2331920CE47005B4AF8 /* cageDeformerARAP.h */,
+				2AA6F22A1920CDC0005B4AF8 /* cageDeformerARAP.cpp */,
+				2AA6F22C1920CDC0005B4AF8 /* StdAfx.cpp */,
+				2AA6F22E1920CDC1005B4AF8 /* StdAfx.h */,
+				2AA6F22F1920CDC1005B4AF8 /* mayaHeaders.h */,
+			);
+			path = cageDeformerARAP;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		2AA6F2101920C94E005B4AF8 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2AA6F2211920CA42005B4AF8 /* cageDeformer.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AA6F2261920CDC0005B4AF8 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2AA6F2341920CE47005B4AF8 /* cageDeformerARAP.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		2AA6F2111920C94E005B4AF8 /* cageDeformer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2AA6F21D1920C94E005B4AF8 /* Build configuration list for PBXNativeTarget "cageDeformer" */;
+			buildPhases = (
+				2AA6F20E1920C94E005B4AF8 /* Sources */,
+				2AA6F20F1920C94E005B4AF8 /* Frameworks */,
+				2AA6F2101920C94E005B4AF8 /* Headers */,
+				2AA6F2381920CEF4005B4AF8 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = cageDeformer;
+			productName = cageDeformer;
+			productReference = 2AA6F2121920C94E005B4AF8 /* cageDeformer.bundle */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		2AA6F2271920CDC0005B4AF8 /* cageDeformerARAP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2AA6F2301920CDC1005B4AF8 /* Build configuration list for PBXNativeTarget "cageDeformerARAP" */;
+			buildPhases = (
+				2AA6F2241920CDC0005B4AF8 /* Sources */,
+				2AA6F2251920CDC0005B4AF8 /* Frameworks */,
+				2AA6F2261920CDC0005B4AF8 /* Headers */,
+				2AA6F2361920CEBF005B4AF8 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = cageDeformerARAP;
+			productName = cageDeformerARAP;
+			productReference = 2AA6F2281920CDC0005B4AF8 /* cageDeformerARAP.bundle */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2AA6F20A1920C94E005B4AF8 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0510;
+				ORGANIZATIONNAME = "mcg-q";
+			};
+			buildConfigurationList = 2AA6F20D1920C94E005B4AF8 /* Build configuration list for PBXProject "cageDeformer" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 2AA6F2091920C94E005B4AF8;
+			productRefGroup = 2AA6F2131920C94E005B4AF8 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2AA6F2111920C94E005B4AF8 /* cageDeformer */,
+				2AA6F2271920CDC0005B4AF8 /* cageDeformerARAP */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2AA6F20E1920C94E005B4AF8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2AA6F2161920C94E005B4AF8 /* cageDeformer.cpp in Sources */,
+				2AA6F2181920C94E005B4AF8 /* StdAfx.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2AA6F2241920CDC0005B4AF8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2AA6F22B1920CDC0005B4AF8 /* cageDeformerARAP.cpp in Sources */,
+				2AA6F22D1920CDC0005B4AF8 /* StdAfx.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2AA6F21B1920C94E005B4AF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = /usr/local/include/eigen3/;
+			};
+			name = Debug;
+		};
+		2AA6F21C1920C94E005B4AF8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = /usr/local/include/eigen3/;
+			};
+			name = Release;
+		};
+		2AA6F21E1920C94E005B4AF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = NO;
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = bundle;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MAC_PLUGIN,
+					_BOOL,
+					REQUIRE_IOSTREAM,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					.,
+					"$(MAYA_LOCATION)/devkit/include/",
+				);
+				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
+					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
+					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
+					"-lOpenMaya",
+					"-lOpenMayaAnim",
+					"-lOpenMayaRender",
+					"-lOpenMayaUI",
+					"-lFoundation",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
+				VALID_ARCHS = x86_64;
+			};
+			name = Debug;
+		};
+		2AA6F21F1920C94E005B4AF8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = YES;
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = bundle;
+				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MAC_PLUGIN,
+					_BOOL,
+					REQUIRE_IOSTREAM,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					.,
+					"$(MAYA_LOCATION)/devkit/include/",
+				);
+				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
+					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
+					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
+					"-lOpenMaya",
+					"-lOpenMayaAnim",
+					"-lOpenMayaRender",
+					"-lOpenMayaUI",
+					"-lFoundation",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
+				VALID_ARCHS = x86_64;
+			};
+			name = Release;
+		};
+		2AA6F2311920CDC1005B4AF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = NO;
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = bundle;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MAC_PLUGIN,
+					_BOOL,
+					REQUIRE_IOSTREAM,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					.,
+					"$(MAYA_LOCATION)/devkit/include/",
+				);
+				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
+					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
+					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
+					"-lOpenMaya",
+					"-lOpenMayaAnim",
+					"-lOpenMayaRender",
+					"-lOpenMayaUI",
+					"-lFoundation",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
+				VALID_ARCHS = x86_64;
+			};
+			name = Debug;
+		};
+		2AA6F2321920CDC1005B4AF8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = YES;
+				DYLIB_COMPATIBILITY_VERSION = "";
+				DYLIB_CURRENT_VERSION = "";
+				EXECUTABLE_EXTENSION = bundle;
+				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MAC_PLUGIN,
+					_BOOL,
+					REQUIRE_IOSTREAM,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					.,
+					"$(MAYA_LOCATION)/devkit/include/",
+				);
+				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = "";
+				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_LDFLAGS = (
+					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
+					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
+					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
+					"-lOpenMaya",
+					"-lOpenMayaAnim",
+					"-lOpenMayaRender",
+					"-lOpenMayaUI",
+					"-lFoundation",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
+				VALID_ARCHS = x86_64;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2AA6F20D1920C94E005B4AF8 /* Build configuration list for PBXProject "cageDeformer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AA6F21B1920C94E005B4AF8 /* Debug */,
+				2AA6F21C1920C94E005B4AF8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2AA6F21D1920C94E005B4AF8 /* Build configuration list for PBXNativeTarget "cageDeformer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AA6F21E1920C94E005B4AF8 /* Debug */,
+				2AA6F21F1920C94E005B4AF8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2AA6F2301920CDC1005B4AF8 /* Build configuration list for PBXNativeTarget "cageDeformerARAP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2AA6F2311920CDC1005B4AF8 /* Debug */,
+				2AA6F2321920CDC1005B4AF8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2AA6F20A1920C94E005B4AF8 /* Project object */;
+}
