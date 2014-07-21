@@ -326,7 +326,7 @@
 				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
 				MACH_O_TYPE = mh_bundle;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				MAYA_LOCATION = /Applications/Autodesk/maya;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
@@ -369,7 +369,7 @@
 				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
 				MACH_O_TYPE = mh_bundle;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				MAYA_LOCATION = /Applications/Autodesk/maya;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
@@ -413,7 +413,7 @@
 				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
 				MACH_O_TYPE = mh_bundle;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				MAYA_LOCATION = /Applications/Autodesk/maya;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
@@ -456,7 +456,7 @@
 				LIBRARY_SEARCH_PATHS = "$(MAYA_LOCATION)/Maya.app/Contents/MacOS";
 				MACH_O_TYPE = mh_bundle;
 				MACOSX_DEPLOYMENT_TARGET = "";
-				MAYA_LOCATION = /Applications/Autodesk/maya2014;
+				MAYA_LOCATION = /Applications/Autodesk/maya;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",

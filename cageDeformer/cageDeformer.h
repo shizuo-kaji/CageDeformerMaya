@@ -1,9 +1,5 @@
 #pragma once
 
-#pragma comment(lib, "OpenMaya.lib")
-#pragma comment(lib, "OpenMayaRender.lib")
-#pragma comment(lib, "OpenMayaAnim.lib")
-#pragma comment(lib, "Foundation.lib")
 #pragma comment(linker, "/export:initializePlugin /export:uninitializePlugin")
 
 #include <maya/MFnPlugin.h>
@@ -32,16 +28,16 @@ public:
 	static MObject		aFrechetSum;
 
 private:
-	void tetMatrix(const MPointArray& p, const MIntArray& triangles, short cageMode, std::vector<Matrix4f>& m);
-	void MVC(const MPointArray& pts, const MPointArray& cagePoints, const MIntArray& triangles, std::vector< std::vector<float> >& w);
+	void tetMatrix(const MPointArray& p, const MIntArray& triangles, short cageMode, std::vector<Matrix4d>& m);
+	void MVC(const MPointArray& pts, const MPointArray& cagePoints, const MIntArray& triangles, std::vector< std::vector<double> >& w);
     MObject     initCageMesh;
     MPointArray initCagePoints;
 	MIntArray triangles;    // cage triangles
 	int numTet;             // number of tetrahedra in cage
     short cageMode;
-    std::vector<Matrix4f> initInvMatrix;   // inverses of initial cage matrix
-    std::vector< std::vector<float> > w;   // weight for the target mesh points
-	std::vector<Vector3f> prevNs;          //  for continuous log
-	std::vector<float> prevThetas;         //  for continuous log
+    std::vector<Matrix4d> initInvMatrix;   // inverses of initial cage matrix
+    std::vector< std::vector<double> > w;   // weight for the target mesh points
+	std::vector<Vector3d> prevNs;          //  for continuous log
+	std::vector<double> prevThetas;         //  for continuous log
 };
 

@@ -17,10 +17,6 @@
 import maya.cmds as cmds
 import pymel.core as pm
 
-# set project path
-import os
-pm.mel.eval(' setProject "' + os.path.dirname(__file__).replace("\\", "/") +'";')
-
 try:
     cmds.loadPlugin("cageDeformer")
     cmds.loadPlugin("cageDeformerARAP")
@@ -49,12 +45,13 @@ class UI_CageDeformer:
     def createUISet(self):
         self._childLayout = pm.columnLayout( adj=True )
         with self._childLayout:
-            pm.text(l="Click cage mesh first, then shift+click target mesh, and click the menu item. \n It takes some time. Be patient !")
+            pm.text(l="Click cage mesh first, then shift+click target mesh, and click the menu item.")
             self.deformers = pm.ls(type="cage")
             for i in range(len(self.deformers)):
                 frameLayout = pm.frameLayout( label=self.deformers[i].name(), collapsable = True)
                 with frameLayout:
                     with pm.rowLayout(numberOfColumns=3) :
+                        pm.button( l="Del", c=pm.Callback( self.deleteNode, self.deformers[i].name()))
                         pm.attrControlGrp( label="cage mode", attribute= self.deformers[i].cgm)
                         pm.attrControlGrp( label="blend mode", attribute= self.deformers[i].bm)
                     with pm.rowLayout(numberOfColumns=3) :
@@ -64,7 +61,8 @@ class UI_CageDeformer:
             for i in range(len(self.deformers)):
                 frameLayout = pm.frameLayout( label=self.deformers[i].name(), collapsable = True)
                 with frameLayout:
-                    with pm.rowLayout(numberOfColumns=3) :
+                    with pm.rowLayout(numberOfColumns=4) :
+                        pm.button( l="Del", c=pm.Callback( self.deleteNode, self.deformers[i].name()))
                         pm.attrControlGrp( label="cage mode", attribute= self.deformers[i].cgm)
                         pm.attrControlGrp( label="blend mode", attribute= self.deformers[i].bm)
                         pm.attrControlGrp( label="constraint mode", attribute= self.deformers[i].constraintMode)
@@ -83,6 +81,11 @@ class UI_CageDeformer:
         cmds.connectAttr(shape+".worldMesh[0]", deformer+".cageMesh")
         # Make deformer weights paintable
         cmds.makePaintable(deformerType, 'weights', attrType='multiFloat', shapeMode='deformer')
+        self.updateUI()
+
+    # delete deformer node
+    def deleteNode(self,name):
+        cmds.delete(name)
         self.updateUI()
 
     def updateUI(self):

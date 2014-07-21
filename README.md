@@ -13,18 +13,19 @@ ProbeDeformer plugins for Maya
 There are two versions of deformers;
 one is simple, and the other adds ARAP modifiation.
 For the detail of the algorithm, refer to the paper 
-"in preparation."
+"A concise parametrisation of affine transformation" by S. Kaji and H. Ochiai.
+http://skaji.org/files/WEB-exponential.pdf
 
 How to compile:
 Look at the included Xcode project file.
 For Windows users, please refer to Autodesk's web page.
 
 How to use:
-put the plugin in "MAYA_PLUG_IN_PATH"
-put the python script in "MAYA_SCRIPT_PATH"
+put the plugins in "MAYA_PLUG_IN_PATH"
+put the UI python script in "MAYA_SCRIPT_PATH"
 open script editor in Maya and type in the following Python command:
 #
-import plugin_deformer.ui_cageDeformer as ui
+import ui_cageDeformer as ui
 ui.UI_CageDeformer()
 #
 
