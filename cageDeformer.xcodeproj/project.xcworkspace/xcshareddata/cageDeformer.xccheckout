@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>E7C2CEA8-CE88-4D97-9284-A9874900D32E</string>
+	<key>IDESourceControlProjectName</key>
+	<string>cageDeformer</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>912A53A2095059FA181F9D8B8218E738CEF205A1</key>
+		<string>github.com:shizuo-kaji/CageDeformerMaya.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>cageDeformer.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>912A53A2095059FA181F9D8B8218E738CEF205A1</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>github.com:shizuo-kaji/CageDeformerMaya.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>912A53A2095059FA181F9D8B8218E738CEF205A1</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>912A53A2095059FA181F9D8B8218E738CEF205A1</string>
+			<key>IDESourceControlWCCName</key>
+			<string>cageDeformer</string>
+		</dict>
+	</array>
+</dict>
+</plist>

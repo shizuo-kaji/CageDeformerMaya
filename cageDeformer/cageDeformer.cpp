@@ -5,70 +5,37 @@
  * @section requirements:  Eigen 3:  http://eigen.tuxfamily.org/
  * @section Autodesk Maya: http://www.autodesk.com/products/autodesk-maya/overview
  * @section (included) AffineLib: https://github.com/shizuo-kaji/AffineLib
- * @version 0.15
- * @date  3/Dec/2012
+ * @version 0.20
+ * @date  19/Sep/2016
  * @author Shizuo KAJI
  */
 
 #include "StdAfx.h"
 #include "cageDeformer.h"
 
+// cage mode
+#define CM_MVC 20
+#define CM_MLS 30
+
+
+
 using namespace Eigen;
 using namespace AffineLib;
+using namespace Tetrise;
 
 MTypeId CageDeformerNode::id( 0x00000200 );
-MString CageDeformerNode::nodeName("cage");
+MString CageDeformerNode::nodeName("cageDeformer");
 MObject CageDeformerNode::aCageMesh;
 MObject CageDeformerNode::aCageMode;
+MObject CageDeformerNode::aSymmetricFace;
 MObject CageDeformerNode::aBlendMode;
 MObject CageDeformerNode::aRotationConsistency;
 MObject CageDeformerNode::aFrechetSum;
+MObject CageDeformerNode::aNormExponent;
+MObject CageDeformerNode::aWeightMode;
+MObject CageDeformerNode::aNormaliseTet;
+MObject CageDeformerNode::aReconstructCage;
 
-// compute distance between a line segment and a point
-double distPtLin(Vector3d p,Vector3d a,Vector3d b){
-    double t= (a-b).dot(p-b)/(a-b).squaredNorm();
-    if(t>1){
-        return (a-p).squaredNorm();
-    }else if(t<0){
-        return (b-p).squaredNorm();
-    }else{
-        return (t*(a-b)-(p-b)).squaredNorm();
-    }
-}
-
-// compute distance between a triangle and a point
-double distPtTri(MPoint pt, Matrix4d m){
-    double s[4];
-    Vector3d a,b,c,n,p;
-    a << m(0,0), m(0,1), m(0,2);
-    b << m(1,0), m(1,1), m(1,2);
-    c << m(2,0), m(2,1), m(2,2);
-    n << m(3,0), m(3,1), m(3,2);
-    p << pt.x, pt.y, pt.z;
-    double k=(n-a).dot(a-p);
-    if(k<0) return HUGE_VALF;
-    s[0]=distPtLin(p,a,b);
-    s[1]=distPtLin(p,b,c);
-    s[2]=distPtLin(p,c,a);
-    Matrix3d A;
-    A << b(0)-a(0), c(0)-a(0), n(0)-a(0),
-    b(1)-a(1), c(1)-a(1), n(1)-a(1),
-    b(2)-a(2), c(2)-a(2), n(2)-a(2);
-    Vector3d v = A.inverse()*(p-a);
-    if(v(0)>0 && v(1)>0 && v(0)+v(1)<1){
-        s[3]=k*k;
-    }else{
-        s[3] = HUGE_VALF;
-    }
-    return min(min(min(s[0],s[1]),s[2]),s[3]);
-}
-
-// check linear independency
-double isDegenerate(MPoint a,MPoint b,MPoint c,MPoint d){
-    return ((b-a)^(c-a)) * (d-a);
-}
-
-// main
 void* CageDeformerNode::creator() { return new CageDeformerNode; }
  
 MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MMatrix &localToWorldMatrix, unsigned int mIndex )
@@ -78,411 +45,335 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     // load cage mesh
     MObject oCageMesh = data.inputValue( aCageMesh ).asMesh();
     short blendMode = data.inputValue(aBlendMode).asShort();
+    short weightMode = data.inputValue( aWeightMode ).asShort();
 	bool rotationCosistency = data.inputValue( aRotationConsistency ).asBool();
 	bool frechetSum = data.inputValue( aFrechetSum ).asBool();
-    if ( oCageMesh.isNull() || blendMode == 99)
+    bool symmetricFace = data.inputValue( aSymmetricFace ).asBool();
+    bool normaliseTet = data.inputValue( aNormaliseTet ).asBool();
+    double normExponent = data.inputValue( aNormExponent ).asDouble();
+    if ( oCageMesh.isNull() || blendMode == BM_OFF)
         return MS::kSuccess;
-    // load attributes
-    short newCageMode = data.inputValue(aCageMode).asShort();
+    short cageMode = data.inputValue(aCageMode).asShort();
     MFnMesh fnCageMesh( oCageMesh, &status );
     CHECK_MSTATUS_AND_RETURN_IT( status );
     MPointArray cagePoints;
     fnCageMesh.getPoints( cagePoints,  MSpace::kWorld );
-    // save initial cage state
-    if (initCagePoints.length() != cagePoints.length()){
-        initCageMesh = oCageMesh;
-        initCagePoints=cagePoints;
+    int numCagePts = cagePoints.length();
+    std::vector<Vector3d> cagePts(numCagePts);
+    for(int i=0;i<numCagePts;i++){
+        cagePts[i] << cagePoints[i].x, cagePoints[i].y, cagePoints[i].z;
     }
+    // save initial cage state
+    bool cageChanged = false;
+    if (initCagePts.size() != numCagePts){
+        initCageMesh = oCageMesh;
+        initCagePts = cagePts;
+        cageChanged = true;
+    }
+    
     // load target mesh pts
-    MPointArray pts;
-    itGeo.allPositions(pts);
-    int numPts = pts.length();
-    for(int j=0; j<numPts; j++ )
-        pts[j] *= localToWorldMatrix;
+    MPointArray Mpts;
+    itGeo.allPositions(Mpts);
+    int numPts = Mpts.length();
+    std::vector<Vector3d> pts(numPts);
+    for(int j=0; j<numPts; j++ ){
+        Mpts[j] *= localToWorldMatrix;
+        pts[j] << Mpts[j].x, Mpts[j].y, Mpts[j].z;
+    }
+    int numCageTet = (int) cageTetList.size()/4;
+
+    
     // when cage mode is changed
-    if(newCageMode != cageMode)
-    {
-        cageMode = newCageMode;
-        MFnMesh fnInitCageMesh( initCageMesh, &status );
-	    std::vector<double> tetWeight;
-        if(cageMode == 10 || cageMode == 11)  // face mode
-        {
-			if(cageMode == 10){
-                MIntArray count;
-                fnInitCageMesh.getTriangles( count, triangles );
-                tetWeight.resize(triangles.length()/3, 1.0);
-			}else if(cageMode ==11){  // trianglate faces with more than 3 edges in a symmetric way
-				triangles.clear();
-				MItMeshPolygon iter(initCageMesh);
-				MIntArray tmp;
-                MVector normal;
-				tetWeight.reserve(4*iter.count());
-                int l;
-				for(int i=0; ! iter.isDone(); i++){
-					iter.getVertices(tmp);
-					l=tmp.length();
-					if(l==3){
-						tetWeight.push_back(1.0);
-						triangles.append(tmp[0]);
-						triangles.append(tmp[1]);
-						triangles.append(tmp[2]);
-					}else{
-						for(int j=0;j<l;j++){
-                            tetWeight.push_back((l-2.0)/l);
-							triangles.append(tmp[j]);
-							triangles.append(tmp[(j+1) % l]);
-							triangles.append(tmp[(j+2) % l]);
-						}
-					}
-					iter.next();
-				}
-			}
-            // face mode compute init matrix
-            numTet=triangles.length()/3;
-            std::vector<Matrix4d> initMatrix(numTet);
-            initInvMatrix.resize(numTet);
-            tetMatrix(initCagePoints, triangles, cageMode, initMatrix);
-            for(int i=0; i<numTet; i++)
-                initInvMatrix[i]=initMatrix[i].inverse();
-            // compute weight for non-ARAP mode
+    if(!data.isClean(aReconstructCage) || cageChanged){
+        std::vector<int> cageFaceCount(0);
+        // face list
+        makeFaceList( initCageMesh, cageFaceList, cageFaceCount, symmetricFace);
+        
+        if( cageMode == TM_FACE || cageMode == TM_EDGE || cageMode == TM_VERTEX || cageMode == TM_VFACE){
+            // set cage tetrahedra
+            std::vector<Matrix4d> initCageMatrix;
+            makeFaceList(initCageMesh, cageFaceList, cageFaceCount);
+            makeVertexList(initCageMesh, cageVertexList);
+            makeEdgeList(cageFaceList, cageEdgeList);
+            makeTetList(cageMode, numCagePts, cageFaceList, cageEdgeList, cageVertexList, cageTetList);
+            if(normaliseTet){
+                tetMatrixNormalised(cageMode, initCagePts, cageTetList, cageFaceList, cageEdgeList,
+                          cageVertexList, initCageMatrix);
+            }else{
+                makeTetMatrix(cageMode, initCagePts, cageTetList, cageFaceList, cageEdgeList,
+                          cageVertexList, initCageMatrix);
+            }
+            makeTetCenterList(cageMode, initCagePts, cageTetList, cageTetCenter);
+            numCageTet = (int) cageTetList.size()/4;
+            cageMatrixI.resize(numCageTet);
+            for(int i=0;i<numCageTet;i++){
+                cageMatrixI[i] = initCageMatrix[i].inverse().eval();
+            }
+
+        // weight computation
+            std::vector<double> cageTetWeight(numCageTet,1.0);
             w.resize(numPts);
-            std::vector< std::vector<double> > idist(numPts);
+            std::vector< std::vector<double> > distPts(numPts);
             for(int j=0;j<numPts;j++){
-                idist[j].resize(numTet);
-                w[j].resize(numTet);
-                double sidist = 0.0;
-                for(int i=0;i<numTet;i++){
-                    idist[j][i] = tetWeight[i]/distPtTri(pts[j],initMatrix[i]);
-                    sidist += idist[j][i];
-                }
-                assert(sidist>0.0);
-                for(int i=0;i<numTet;i++)
-                    w[j][i] = idist[j][i] /sidist;
-            } // face mode end
-        }else if(cageMode == 0 || cageMode == 1 ){ // vertex mode
-            triangles.clear();
-            std::vector<int> tetCount(initCagePoints.length());
-            MItMeshVertex iter(initCageMesh);
-            for(int j=0; ! iter.isDone(); j++){
-                MIntArray v;
-                iter.getConnectedVertices(v);
-                int l=v.length();
-                if(l==3){
-                    if(isDegenerate(initCagePoints[j],initCagePoints[v[0]],initCagePoints[v[1]],initCagePoints[v[2]]) != 0){
-                        tetCount[j]++;
-                        triangles.append(j);
-                        triangles.append(v[0]);
-                        triangles.append(v[1]);
-                        triangles.append(v[2]);
+                distPts[j].resize(numCageTet);
+                w[j].resize(numCageTet);
+            }
+            switch (cageMode){
+                case TM_FACE:
+                    for(int i=0;i<numCageTet;i++){
+                        cageTetWeight[i] /= cageFaceCount[i];
                     }
-                }else{
-                    for(int k=0;k<l;k++){
-                        if(isDegenerate(initCagePoints[j],initCagePoints[v[k]],initCagePoints[v[(k+1) % l]],initCagePoints[v[(k+2) % l]]) != 0){
-                            tetCount[j]++;
-                            triangles.append(j);
-                            triangles.append(v[k]);
-                            triangles.append(v[(k+1) % l]);
-                            triangles.append(v[(k+2) % l]);
+                    for(int j=0;j<numPts;j++){
+                        for(int i=0;i<numCageTet;i++){
+                            Vector3d a=initCagePts[cageTetList[4*i]];
+                            Vector3d b=initCagePts[cageTetList[4*i+1]];
+                            Vector3d c=initCagePts[cageTetList[4*i+2]];
+                            distPts[j][i] = distPtTri(pts[j], a,b,c);
+                        }
+                    }
+                    break;
+                case TM_EDGE:
+                    for(int i=0;i<cageEdgeList.size();i++){
+                        for(int k=0;k<2;k++){
+                            cageTetWeight[2*i+k] /= cageFaceCount[cageEdgeList[i].faces[k]];
+                        }
+                    }
+                    for(int j=0;j<numPts;j++){
+                        for(int i=0;i<numCageTet;i++){
+                            Vector3d a=initCagePts[cageTetList[4*i]];
+                            Vector3d b=initCagePts[cageTetList[4*i+1]];
+                            distPts[j][i] = distPtLin(pts[j], a,b);
+                        }
+                    }
+                    break;
+                case TM_VERTEX:
+                case TM_VFACE:
+                    // setting weights
+                    int cur=0;
+                    for(int i=0;i<numCagePts;i++){
+                        for(int k=0;k<cageVertexList[i].connectedTriangles.size()/2;k++){
+                            cageTetWeight[cur] /= cageVertexList[i].connectedTriangles.size()/2;
+                            cur++;
+                        }
+                    }
+                    for(int j=0;j<numPts;j++){
+                        for(int i=0;i<numCageTet;i++){
+                            distPts[j][i] = (pts[j]-cageTetCenter[i]).norm();
+                        }
+                    }
+                    break;
+            }
+            if(weightMode == WM_INV_DISTANCE){
+                for(int j=0; j<numPts; j++ ){
+                    for(int i=0;i<numCageTet;i++){
+                        w[j][i] = cageTetWeight[i] / pow(distPts[j][i],normExponent);
+                    }
+                }
+            }else if(weightMode == WM_HARMONIC){
+                std::vector<int> fList,tList;
+                std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
+                std::vector<Matrix4d> P;
+                int d=makeFaceTet(data, input, inputGeom, mIndex, pts, fList, tList, P);
+                std::vector< std::map<int,double> > weightConstraint(numCageTet);
+                std::vector<double> weightConstraintValue(0);
+                for(int i=0;i<numCageTet;i++){
+                    weightConstraint[i].clear();
+                }
+                std::vector<int> closestPts(numCageTet);
+                for(int i=0;i<numCageTet;i++){
+                    weightConstraint[i].clear();
+                    closestPts[i] = 0;
+                    double min_d = HUGE_VAL;
+                    for(int j=0;j<numPts;j++){
+                        if( distPts[j][i] < min_d){
+                            min_d = distPts[j][i];
+                            closestPts[i] = j;
                         }
                     }
                 }
-                iter.next();
+                for(int i=0;i<numCageTet;i++){
+                    weightConstraint[i][closestPts[i]] = 1;
+                    weightConstraintValue.push_back(1);
+                }
+                int isError = harmonicWeight(d, P, tList, fList, weightConstraint, weightConstraintValue, ptsWeight);
+                if(isError>0) return MS::kFailure;
+                for(int i=0;i<numCageTet;i++){
+                    for(int j=0;j<numPts;j++){
+                        w[j][i] = ptsWeight[i][j];
+                    }
+                }
             }
-			numTet=triangles.length()/4;
-            std::vector<Matrix4d> initMatrix(numTet);
-            initInvMatrix.resize(numTet);
-            tetMatrix(initCagePoints, triangles, cageMode, initMatrix);
-            for(int i=0; i<numTet; i++)
-                initInvMatrix[i]=initMatrix[i].inverse();
+        }else if(cageMode == CM_MVC){
+			MVC(pts, initCagePts, cageFaceList, w);
+        }else if(cageMode == CM_MLS){
             w.resize(numPts);
-            std::vector< std::vector<double> > idist(numPts);
-			tetWeight.resize(numTet);
-			for(int i=0;i<numTet;i++)
-				tetWeight[i]=1.0/(double)tetCount[triangles[4*i]];
             for(int j=0;j<numPts;j++){
-                idist[j].resize(numTet);
-                w[j].resize(numTet);
-                double sidist = 0.0;
-                Vector3d p(pts[j].x,pts[j].y,pts[j].z);
-                for(int i=0;i<numTet;i++){
-                    Vector3d c(initCagePoints[triangles[4*i]].x,initCagePoints[triangles[4*i]].y,initCagePoints[triangles[4*i]].z);
-                    idist[j][i] = tetWeight[i] / ((p-c).squaredNorm());
-                    sidist += idist[j][i];
+                w[j].resize(numCagePts);
+                for(int i=0;i<numCagePts;i++){
+                    w[j][i] = 1.0 / pow((pts[j]-initCagePts[i]).norm(),normExponent);
                 }
-                assert(sidist>0.0);
-                for(int i=0;i<numTet;i++)
-                    w[j][i] = idist[j][i] /sidist;
             }
-        }else if(cageMode == 5 || cageMode == 6 ){ // vertex averaged normal mode
-            triangles.clear();
-            std::vector<int> tetCount(initCagePoints.length());
-            MItMeshVertex iter(initCageMesh);
-            for(int j=0; ! iter.isDone(); j++){
-                MIntArray v;
-                iter.getConnectedVertices(v);
-                int l=v.length();
-                for(int k=0;k<l;k++){
-                    tetCount[j]++;
-                    triangles.append(j);
-                    triangles.append(v[k]);
-                    triangles.append(v[(k+1) % l]);
-                }
-                iter.next();
+        }
+        // weight normalisation
+        for(int j=0;j<numPts;j++){
+            double sum=std::accumulate(w[j].begin(), w[j].end(), 0.0);
+            assert(sum>0);
+            for(int i=0;i<w[j].size();i++){
+                w[j][i] /= sum;
             }
-			numTet=triangles.length()/3;
-            std::vector<Matrix4d> initMatrix(numTet);
-            initInvMatrix.resize(numTet);
-            tetMatrix(initCagePoints, triangles, cageMode, initMatrix);
-            for(int i=0; i<numTet; i++)
-            initInvMatrix[i]=initMatrix[i].inverse();
-            w.resize(numPts);
-            std::vector< std::vector<double> > idist(numPts);
-			tetWeight.resize(numTet);
-			for(int i=0;i<numTet;i++)
-            tetWeight[i]=1.0/(double)tetCount[triangles[3*i]];
-            for(int j=0;j<numPts;j++){
-                idist[j].resize(numTet);
-                w[j].resize(numTet);
-                double sidist = 0.0;
-                Vector3d p(pts[j].x,pts[j].y,pts[j].z);
-                for(int i=0;i<numTet;i++){
-                    Vector3d c(initCagePoints[triangles[3*i]].x,initCagePoints[triangles[3*i]].y,initCagePoints[triangles[3*i]].z);
-                    idist[j][i] = tetWeight[i] / ((p-c).squaredNorm());
-                    sidist += idist[j][i];
-                }
-                assert(sidist>0.0);
-                for(int i=0;i<numTet;i++)
-                w[j][i] = idist[j][i] /sidist;
-            }
-        }else if(cageMode == 20){ // MVC mode
-            MIntArray count;
-            fnInitCageMesh.getTriangles( count, triangles );
-            numTet=triangles.length()/3;
-			int numCagePoints=initCagePoints.length();
-			for(int j=0; j<numPts; j++ )
-				w[j].resize(numCagePoints);
-			MVC(pts, initCagePoints, triangles, w);
-		}
+        }
+        data.setClean(aReconstructCage);
     }
     
     // transform vertices
-	if(cageMode<20){
+	if(cageMode == TM_FACE || cageMode == TM_EDGE || cageMode == TM_VERTEX || cageMode == TM_VFACE){
         // clear previous rotation
-        if( ! rotationCosistency || numTet != prevNs.size()){
-            prevThetas.clear();
-            prevThetas.resize(numTet, 0.0);
-            prevNs.clear();
-            prevNs.resize(numTet, Vector3d::Zero());
+        if( ! rotationCosistency || numCageTet != logR.size() || numCageTet != logSE.size()){
+            logSE.clear();
+            logSE.resize(numCageTet, Matrix4d::Zero().eval());
+            logR.clear();
+            logR.resize(numCageTet, Matrix3d::Zero().eval());
         }
         //  find affine transformations for tetrahedra
-        std::vector<Matrix4d> cageMatrix(numTet), SE(numTet), logSE(numTet),logAff(numTet),aff(numTet);
-        std::vector<Matrix3d> logR(numTet),R(numTet),logS(numTet),logGL(numTet);
-        std::vector<Vector3d> L(numTet);
-        std::vector<Vector4d> quat(numTet);
-        tetMatrix(cagePoints, triangles, cageMode, cageMatrix);
-        for(int i=0; i<numTet; i++)
-            aff[i]=initInvMatrix[i]*cageMatrix[i];
-        // compute parametrisation
-        if(blendMode == 0 || blendMode == 1 || blendMode == 5)  // polarexp or quaternion
-        {
-            for(int i=0;i<numTet;i++){
-                parametriseGL(aff[i].block(0,0,3,3), logS[i] ,R[i]);
-                L[i] = transPart(aff[i]);
-                if(blendMode == 0){  // Rotational log
-                    logR[i]=logSOc(R[i], prevThetas[i], prevNs[i]);
-                }else if(blendMode == 1){ // Eucledian log
-                    SE[i]=affine(R[i], L[i]);
-                    logSE[i]=logSEc(SE[i], prevThetas[i], prevNs[i]);
-                }else if(blendMode == 5){ // quaternion
+        cageMatrix.resize(numCageTet); SE.resize(numCageTet);
+        logAff.resize(numCageTet); Aff.resize(numCageTet);
+        R.resize(numCageTet); logS.resize(numCageTet); S.resize(numCageTet); logGL.resize(numCageTet);
+        L.resize(numCageTet); quat.resize(numCageTet);
+        if(normaliseTet){
+            tetMatrixNormalised(cageMode, cagePts, cageTetList, cageFaceList, cageEdgeList,
+                      cageVertexList, cageMatrix);
+        }else{
+            makeTetMatrix(cageMode, cagePts, cageTetList, cageFaceList, cageEdgeList,
+                      cageVertexList, cageMatrix);
+        }
+        for(int i=0; i<numCageTet; i++)
+            Aff[i]=cageMatrixI[i]*cageMatrix[i];
+        // parametrisation
+        if(blendMode == BM_SRL || blendMode == BM_SSE || blendMode == BM_SQL){
+            for(int i=0;i<numCageTet;i++){
+                parametriseGL(Aff[i].block(0,0,3,3), logS[i] ,R[i]);
+                L[i] = transPart(Aff[i]);
+                if(blendMode == BM_SRL){
+                    logR[i]=logSOc(R[i], logR[i]);
+                }else if(blendMode == BM_SSE){
+                    SE[i]=pad(R[i], L[i]);
+                    logSE[i]=logSEc(SE[i], logSE[i]);
+                }else if(blendMode == BM_SQL){
                     Quaternion<double> Q(R[i].transpose());
                     quat[i] << Q.x(), Q.y(), Q.z(), Q.w();
+                    S[i]=expSym(logS[i]);
                 }
             }
-        }else if(blendMode == 2){    //logmatrix3
-            for(int i=0;i<numTet;i++){
-                logGL[i] = aff[i].block(0,0,3,3).log();
-                L[i] = transPart(aff[i]);
+        }else if(blendMode == BM_LOG3){
+            for(int i=0;i<numCageTet;i++){
+                logGL[i] = Aff[i].block(0,0,3,3).log();
+                L[i] = transPart(Aff[i]);
             }
-        }else if(blendMode == 3){   // logmatrix4
-            for(int i=0;i<numTet;i++){
-                logAff[i] = aff[i].log();
+        }else if(blendMode == BM_LOG4){
+            for(int i=0;i<numCageTet;i++){
+                logAff[i] = Aff[i].log();
             }
         }
-        // compute blended matrix
-#pragma omp parallel for
-		for(int j=0; j<numPts; j++ ){
-            Matrix4d mat=Matrix4d::Zero();
-            if(blendMode==0){
-                Matrix3d RR=Matrix3d::Zero();
-                Matrix3d SS=Matrix3d::Zero();
-                Vector3d l=Vector3d::Zero();
-                for(int i=0; i<numTet; i++){
-                    RR += w[j][i] * logR[i];
-                    SS += w[j][i] * logS[i];
-                    l += w[j][i] * L[i];
-                }
-                SS = expSym(SS);
+        
+        #pragma omp parallel for
+        for(int j=0; j<numPts; j++ ){
+            Matrix4d mat;
+            // blend matrix
+            if(blendMode == BM_SRL){
+                Matrix3d RR,SS=expSym(blendMat(logS, w[j]));
+                Vector3d l=blendMat(L, w[j]);
                 if(frechetSum){
                     RR = frechetSO(R, w[j]);
                 }else{
-                    RR = expSO(RR);
+                    RR = expSO(blendMat(logR, w[j]));
                 }
-                mat = affine(SS*RR, l);
-            }else if(blendMode==1){    // rigid transformation
-                Matrix4d EE=Matrix4d::Zero();
-                Matrix3d SS=Matrix3d::Zero();
-                for(int i=0; i<numTet; i++){
-                    EE +=  w[j][i] * logSE[i];
-                    SS +=  w[j][i] * logS[i];
-                }
-                if(frechetSum){
-                    EE = frechetSE(SE, w[j]);
-                }else{
-                    EE = expSE(EE);
-                }
-                mat = affine(expSym(SS),Vector3d::Zero())*EE;
-            }else if(blendMode == 2){    //logmatrix3
-                Matrix3d G=Matrix3d::Zero();
-                Vector3d l=Vector3d::Zero();
-                for(int i=0; i<numTet; i++){
-                    G +=  w[j][i] * logGL[i];
-                    l += w[j][i] * L[i];
-                }
-                mat = affine(G.exp(), l);
-            }else if(blendMode == 3){   // logmatrix4
-                Matrix4d A=Matrix4d::Zero();
-                for(int i=0; i<numTet; i++)
-                    A +=  w[j][i] * logAff[i];
-                mat = A.exp();
-            }else if(blendMode == 5){ // quaternion
-                Vector4d q=Vector4d::Zero();
-                Matrix3d SS=Matrix3d::Zero();
-                Vector3d l=Vector3d::Zero();
-                for(int i=0; i<numTet; i++){
-                    q += w[j][i] * quat[i];
-                    SS += w[j][i] * logS[i];
-                    l += w[j][i] * L[i];
-                }
-                SS = expSym(SS);
+                mat = pad(SS*RR, l);
+            }else if(blendMode == BM_SSE){
+                Matrix4d RR;
+                Matrix3d SS=expSym(blendMat(logS, w[j]));
+                RR = expSE(blendMat(logSE, w[j]));
+                mat = pad(SS,Vector3d::Zero()) * RR;
+            }else if(blendMode == BM_LOG3){
+                Matrix3d RR=blendMat(logGL, w[j]).exp();
+                Vector3d l=blendMat(L, w[j]);
+                mat = pad(RR, l);
+            }else if(blendMode == BM_LOG4){
+                mat=blendMat(logAff, w[j]).exp();
+            }else if(blendMode == BM_SQL){
+                Vector4d q=blendQuat(quat,w[j]);
+                Vector3d l=blendMat(L, w[j]);
+                Matrix3d SS=blendMatLin(S,w[j]);
                 Quaternion<double> Q(q);
                 Matrix3d RR = Q.matrix().transpose();
-                mat = affine(SS*RR, l);
-            }else if(blendMode==10){
-                for(int i=0; i<numTet; i++){
-                    mat += w[j][i] * aff[i];
-                }
+                mat = pad(SS*RR, l);
+            }else if(blendMode == BM_AFF){
+                mat = blendMatLin(Aff,w[j]);
             }
             // apply matrix
-            MMatrix m;
-            for(int i=0; i<4; i++)
-                for(int k=0; k<4; k++)
-                    m(i,k)=mat(i,k);
-            pts[j] *= m*localToWorldMatrix.inverse();
+            RowVector4d p = pad(pts[j]) * mat;
+            Mpts[j].x = p[0];
+            Mpts[j].y = p[1];
+            Mpts[j].z = p[2];
+            Mpts[j] *= localToWorldMatrix.inverse();
         }
-	}else if(cageMode == 20){      // MVC mode
-		int numCagePoints = cagePoints.length();
+	}else if(cageMode == CM_MVC){
 		for(int j=0; j<numPts; j++ ){
-			pts[j] = MPoint::origin;
-			for(int i=0;i<numCagePoints;i++)
-				pts[j] +=  cagePoints[i] * w[j][i];
+			Mpts[j] = MPoint::origin;
+			for(int i=0;i<numCagePts;i++){
+				Mpts[j] +=  cagePoints[i] * w[j][i];
+            }
+            Mpts[j] *= localToWorldMatrix.inverse();
 		}
-	}
-    itGeo.setAllPositions(pts);
+    }else if(cageMode == CM_MLS){
+        for(int j=0; j<numPts; j++ ){
+            // barycentre of the original and the current cage points
+            Vector3d icenter = Vector3d::Zero();
+            Vector3d center = Vector3d::Zero();
+            for(int i=0;i<numCagePts;i++){
+                icenter += w[j][i] * initCagePts[i];
+                center += w[j][i] * cagePts[i];
+            }
+            // determine the closest affine matrix
+            std::vector<Vector3d> p(numCagePts), q(numCagePts);   // relative coordinates of the cage
+            Matrix3d M,P,Q;
+            P = Matrix3d::Zero();
+            Q = Matrix3d::Zero();
+            for(int i=0;i<numCagePts;i++){
+                p[i] = initCagePts[i]-icenter;
+                q[i] = cagePts[i]-center;
+                P += w[j][i] * (p[i] * p[i].transpose());
+                Q += w[j][i] * p[i] * q[i].transpose();
+            }
+            M = P.inverse() * Q;
+
+            RowVector4d v = pad(pts[j]) * pad(M,center-icenter);
+            Mpts[j].x = v[0];
+            Mpts[j].y = v[1];
+            Mpts[j].z = v[2];
+            Mpts[j] *= localToWorldMatrix.inverse();
+        }
+    }
+    itGeo.setAllPositions(Mpts);
  
     return MS::kSuccess;
 }
 
-// prepare tetrahedra
-void CageDeformerNode::tetMatrix(const MPointArray& p, const MIntArray& triangles, short cageMode, std::vector<Matrix4d>& m)
+// mean value coordinate
+void CageDeformerNode::MVC(const std::vector<Vector3d>& pts, const std::vector<Vector3d>& cagePts,
+                           const std::vector<int>& cageFaceList, std::vector< std::vector<double> >& w)
 {
-    int numTet;
-    if(cageMode == 10 || cageMode == 11){
-        MVector u, v, q ;
-        numTet=triangles.length()/3;
-        for(int i=0;i<numTet;i++){
-            u=MVector(p[triangles[3*i+1]]-p[triangles[3*i]]);
-            v=MVector(p[triangles[3*i+2]]-p[triangles[3*i]]);
-			q=u^v;
-			q.normalize();
-            m[i] << p[triangles[3*i]].x, p[triangles[3*i]].y, p[triangles[3*i]].z, 1,
-            p[triangles[3*i+1]].x, p[triangles[3*i+1]].y, p[triangles[3*i+1]].z, 1,
-            p[triangles[3*i+2]].x, p[triangles[3*i+2]].y, p[triangles[3*i+2]].z, 1,
-            (p[triangles[3*i]]+q).x, (p[triangles[3*i]]+q).y, (p[triangles[3*i]]+q).z,1;
-        }
-    }else if (cageMode == 0){
-        numTet=triangles.length()/4;
-        for(int i=0;i<numTet;i++){
-            m[i] << p[triangles[4*i]].x, p[triangles[4*i]].y, p[triangles[4*i]].z, 1,
-            p[triangles[4*i+1]].x, p[triangles[4*i+1]].y, p[triangles[4*i+1]].z, 1,
-            p[triangles[4*i+2]].x, p[triangles[4*i+2]].y, p[triangles[4*i+2]].z, 1,
-            p[triangles[4*i+3]].x, p[triangles[4*i+3]].y, p[triangles[4*i+3]].z, 1;
-        }
-    }else if (cageMode == 1){
-        numTet=triangles.length()/4;
-        MVector u, v, q;
-        for(int i=0;i<numTet;i++){
-            u=MVector(p[triangles[4*i+1]]-p[triangles[4*i]]);
-            v=MVector(p[triangles[4*i+2]]-p[triangles[4*i]]);
-            q=MVector(p[triangles[4*i+3]]-p[triangles[4*i]]);
-            u.normalize();
-            v.normalize();
-            q.normalize();
-            m[i] << p[triangles[4*i]].x, p[triangles[4*i]].y, p[triangles[4*i]].z, 1,
-            u[0]+p[triangles[4*i]].x,u[1]+p[triangles[4*i]].y,u[2]+p[triangles[4*i]].z,1,
-            v[0]+p[triangles[4*i]].x,v[1]+p[triangles[4*i]].y,v[2]+p[triangles[4*i]].z,1,
-            q[0]+p[triangles[4*i]].x,q[1]+p[triangles[4*i]].y,q[2]+p[triangles[4*i]].z,1;
-        }
-    }else if (cageMode == 5 || cageMode == 6){
-        numTet=triangles.length()/3;
-        std::vector<Vector3d> normal(p.length(),Vector3d::Zero());           //averaged normal vector for vertex mode
-        for(int i=0;i<numTet;i++){
-            MVector q = MVector(p[triangles[3*i+1]]-p[triangles[3*i]]) ^ MVector(p[triangles[3*i+2]]-p[triangles[3*i]]);
-            normal[triangles[3*i]] += Vector3d(q[0], q[1], q[2]);
-        }
-        if (cageMode == 5){
-            for(int i=0;i<numTet;i++){
-                m[i] << p[triangles[3*i]].x, p[triangles[3*i]].y, p[triangles[3*i]].z, 1,
-                p[triangles[3*i+1]].x, p[triangles[3*i+1]].y, p[triangles[3*i+1]].z, 1,
-                p[triangles[3*i+2]].x, p[triangles[3*i+2]].y, p[triangles[3*i+2]].z, 1,
-                p[triangles[3*i]].x + normal[triangles[3*i]][0], p[triangles[3*i]].y + normal[triangles[3*i]][1], p[triangles[3*i]].z + normal[triangles[3*i]][2],1;
-            }
-        }else if (cageMode == 6){
-            MVector u,v,q;
-            for(int i=0;i<numTet;i++){
-                u=MVector(p[triangles[3*i+1]]-p[triangles[3*i]]);
-                v=MVector(p[triangles[3*i+2]]-p[triangles[3*i]]);
-                u.normalize();
-                v.normalize();
-                normal[triangles[3*i]].normalize();
-                m[i] << p[triangles[3*i]].x, p[triangles[3*i]].y, p[triangles[3*i]].z, 1,
-                u[0]+p[triangles[3*i]].x,u[1]+p[triangles[3*i]].y,u[2]+p[triangles[3*i]].z,1,
-                v[0]+p[triangles[3*i]].x,v[1]+p[triangles[3*i]].y,v[2]+p[triangles[3*i]].z,1,
-                normal[triangles[3*i]][0]+p[triangles[3*i]].x,normal[triangles[3*i]][1]+p[triangles[3*i]].y,normal[triangles[3*i]][2]+p[triangles[3*i]].z,1;
-            }
-        }
-    }
-}
-
-
-// compute mean value coordinate
-void CageDeformerNode::MVC(const MPointArray& pts, const MPointArray& cagePoints, const MIntArray& triangles, std::vector< std::vector<double> >& w)
-{
-	int numPts=pts.length();
-	int num=cagePoints.length();
-	int numTriangles=triangles.length()/3;
-	std::vector<Vector3d> q(num);
-	for(int i=0;i<num;i++)
-        q[i] << cagePoints[i].x, cagePoints[i].y, cagePoints[i].z;
-
+	int numPts=(int) pts.size();
+	int numCagePts=(int) cagePts.size();
+	int numFaces=(int) cageFaceList.size()/3;
+    w.resize(numPts);
 #pragma omp parallel for
 	for(int j=0; j<numPts; j++ ){
-		std::vector<double> mu(num), a(3), b(3);
-		Vector3d v;
-		v << pts[j].x, pts[j].y, pts[j].z;
+        w[j].resize(numCagePts);
+		std::vector<double> mu(numCagePts), a(3), b(3);
 		std::vector<Vector3d> e(3),n(3);
-		for(int i=0;i<numTriangles;i++){
+		for(int i=0;i<numFaces;i++){
 			for(int k=0;k<3;k++)
-				e[k]=(v-q[triangles[3*i+k]]).normalized();
+				e[k]=(pts[j]-cagePts[cageFaceList[3*i+k]]).normalized();
 			for(int k=0;k<3;k++)
 				n[k]=(e[(k+1)%3].cross(e[(k+2)%3])).normalized();
 			for(int k=0;k<3;k++){
@@ -490,62 +381,95 @@ void CageDeformerNode::MVC(const MPointArray& pts, const MPointArray& cagePoints
 				b[k]=acos(e[(k+1)%3].dot(e[(k+2)%3]));
 			}
 			for(int k=0;k<3;k++)
-                mu[triangles[3*i+k]] -= (b[k]+b[(k+2)%3]*a[(k+1)%3]+b[(k+1)%3]*a[(k+2)%3])/(2.0*e[k].dot(n[k]));
+                mu[cageFaceList[3*i+k]] -= (b[k]+b[(k+2)%3]*a[(k+1)%3]+b[(k+1)%3]*a[(k+2)%3])/(2.0*e[k].dot(n[k]));
 		}
 		double smu=0.0;
-		for(int i=0;i<num;i++){
-			mu[i] /= (v-q[i]).norm();
+		for(int i=0;i<numCagePts;i++){
+			mu[i] /= (pts[j]-cagePts[i]).norm();
 			smu += mu[i];
 		}
-		for(int i=0;i<num;i++)
+		for(int i=0;i<numCagePts;i++)
 			w[j][i] = mu[i]/smu;
 	}
 }
 
 
 // maya plugin initialization
-MStatus CageDeformerNode::initialize()
-{
+MStatus CageDeformerNode::initialize(){
     MFnTypedAttribute tAttr;
     MFnNumericAttribute nAttr;
     MFnEnumAttribute eAttr;
  
+    // this attr will be dirtied when weight recomputation is needed
+    aReconstructCage = nAttr.create( "reconstructCage", "reconstructCage", MFnNumericData::kBoolean, true );
+    nAttr.setHidden(true);
+    nAttr.setStorable(false);
+    nAttr.setKeyable(false);
+    addAttribute( aReconstructCage );
+
     aCageMesh = tAttr.create( "cageMesh", "cm", MFnData::kMesh );
     addAttribute( aCageMesh );
     attributeAffects( aCageMesh, outputGeom );
  
-    aCageMode = eAttr.create( "cageMode", "cgm", 10 );
-    eAttr.addField( "vertex", 0 );
-    eAttr.addField( "vertexNormalized", 1 );
-    eAttr.addField( "vertex avg. normal", 5 );
-    eAttr.addField( "vertex avg. normal normalized", 6 );
-    eAttr.addField( "face", 10 );
-    eAttr.addField( "faceSymmetrized", 11 );
-    eAttr.addField( "MVC", 20 );
-//    eAttr.addField( "init", 99 );
+    aCageMode = eAttr.create( "cageMode", "cgm", TM_FACE );
+    eAttr.addField( "face", TM_FACE );
+    eAttr.addField( "edge", TM_EDGE );
+    eAttr.addField( "vertex", TM_VERTEX );
+    eAttr.addField( "vface", TM_VFACE );
+    eAttr.addField( "MVC", CM_MVC );
+    eAttr.addField( "MLS", CM_MLS );
     addAttribute( aCageMode );
     attributeAffects( aCageMode, outputGeom );
+    attributeAffects( aCageMode, aReconstructCage );
+    
+    aSymmetricFace = nAttr.create( "symmetricFace", "sf", MFnNumericData::kBoolean, true );
+    nAttr.setStorable(true);
+    addAttribute( aSymmetricFace );
+    attributeAffects( aSymmetricFace, outputGeom );
+    attributeAffects( aSymmetricFace, aReconstructCage );
 
-    aBlendMode = eAttr.create( "blendMode", "bm", 0 );
-    eAttr.addField( "polarexp", 0 );
-    eAttr.addField( "polarexpSE", 1 );
-    eAttr.addField( "logmatrix3", 2 );
-    eAttr.addField( "logmatrix4", 3 );
-    eAttr.addField( "quaternion", 5 );
-    eAttr.addField( "linear", 10 );
-    eAttr.addField( "off", 99 );
+    aBlendMode = eAttr.create( "blendMode", "bm", BM_SRL );
+    eAttr.addField( "expSO+expSym", BM_SRL );
+    eAttr.addField( "expSE+expSym", BM_SSE );
+    eAttr.addField( "logmatrix3", BM_LOG3 );
+    eAttr.addField( "logmatrix4", BM_LOG4 );
+    eAttr.addField( "quat+linear", BM_SQL );
+    eAttr.addField( "linear", BM_AFF );
+    eAttr.addField( "off", BM_OFF );
+    eAttr.setStorable(true);
     addAttribute( aBlendMode );
     attributeAffects( aBlendMode, outputGeom );
 
-	aRotationConsistency = nAttr.create( "rotationConsistency", "rc", MFnNumericData::kBoolean, 0 );
+	aRotationConsistency = nAttr.create( "rotationConsistency", "rc", MFnNumericData::kBoolean, false );
     nAttr.setStorable(true);
     addAttribute( aRotationConsistency );
     attributeAffects( aRotationConsistency, outputGeom );
     
+	aNormaliseTet = nAttr.create( "normaliseTet", "nr", MFnNumericData::kBoolean, false );
+    nAttr.setStorable(true);
+    addAttribute( aNormaliseTet );
+    attributeAffects( aNormaliseTet, outputGeom );
+    attributeAffects( aNormaliseTet, aReconstructCage );
+
 	aFrechetSum = nAttr.create( "frechetSum", "fs", MFnNumericData::kBoolean, 0 );
     nAttr.setStorable(true);
     addAttribute( aFrechetSum );
     attributeAffects( aFrechetSum, outputGeom );
+
+    aWeightMode = eAttr.create( "weightMode", "wtm", WM_INV_DISTANCE );
+    eAttr.addField( "inverse", WM_INV_DISTANCE );
+//    eAttr.addField( "cut-off", WM_CUTOFF_DISTANCE );
+    eAttr.addField( "harmonic", WM_HARMONIC );
+    eAttr.setStorable(true);
+    addAttribute( aWeightMode );
+    attributeAffects( aWeightMode, outputGeom );
+    attributeAffects( aWeightMode, aReconstructCage );
+
+    aNormExponent = nAttr.create("normExponent", "ne", MFnNumericData::kDouble, 2.0);
+    nAttr.setStorable(true);
+	addAttribute( aNormExponent );
+	attributeAffects( aNormExponent, outputGeom );
+	attributeAffects( aNormExponent, aReconstructCage );
 
     return MS::kSuccess;
 }

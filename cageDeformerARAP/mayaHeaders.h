@@ -1,9 +1,9 @@
 //
 //  Copyright 2012 Autodesk, Inc.  All rights reserved.
 //
-//  Use of this software is subject to the terms of the Autodesk license 
-//  agreement provided at the time of installation or download, or which 
-//  otherwise accompanies this software in either electronic or hard copy form.   
+//  Use of this software is subject to the terms of the Autodesk license
+//  agreement provided at the time of installation or download, or which
+//  otherwise accompanies this software in either electronic or hard copy form.
 //
 
 //- Written by Cyrille Fauvel, Autodesk Developer Network (ADN)
@@ -28,15 +28,15 @@
 #if defined(NT_PLUGIN) && !defined(_MANAGED)
 #define EXPORT comment(linker, "/EXPORT:"__FUNCTION__"="__FUNCDNAME__)
 #else
-#define EXPORT 
+#define EXPORT
 #endif
 
 //-----------------------------------------------------------------------------
 #define MayaOk(a,b) \
-	if ( !a ) { \
-	a.perror (b) ; \
-	return (a) ; \
-	}
+if ( !a ) { \
+    a.perror (b) ; \
+    return (a) ; \
+}
 #define NodeRegisterOk(a) MayaOk(a,_T("registerNode"))
 #define NodeUnregisterOk(a) MayaOk(a,_T("deregisterNode"))
 
@@ -102,19 +102,6 @@
 #include <maya/MAttributeSpecArray.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MCallbackIdArray.h>
-#include <maya/MClothConstraint.h>
-#include <maya/MClothConstraintBridge.h>
-#include <maya/MClothConstraintCmd.h>
-#include <maya/MClothControl.h>
-#include <maya/MClothEdge.h>
-#include <maya/MClothForce.h>
-#include <maya/MClothMaterial.h>
-#include <maya/MClothParticle.h>
-#include <maya/MClothPolyhedron.h>
-#include <maya/MClothSolverRegister.h>
-#include <maya/MClothSystem.h>
-#include <maya/MClothTriangle.h>
-#include <maya/MClothTypes.h>
 #include <maya/MColor.h>
 #include <maya/MColorArray.h>
 #include <maya/MCommandMessage.h>
@@ -367,7 +354,7 @@
 #include <maya/MPxDeformerNode.h>
 #include <maya/MPxDragAndDropBehavior.h>
 #include <maya/MPxEmitterNode.h>
-#include <maya/MPxFieldNode.h>
+//#include <maya/MPxFieldNode.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MPxFluidEmitterNode.h>
 #include <maya/MPxGeometryData.h>

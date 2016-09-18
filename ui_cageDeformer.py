@@ -7,7 +7,7 @@
 # @section import plugin_deformer.ui_cageDeformer as ui; ui.UI_CageDeformer()
 # @version 0.25
 #  @author      Shizuo KAJI
-#  @date        2013/5/13
+#  @date        13/May/2013
 
 
 #import debugmaya
@@ -17,27 +17,27 @@
 import maya.cmds as cmds
 import pymel.core as pm
 
-try:
-    cmds.loadPlugin("cageDeformer")
-    cmds.loadPlugin("cageDeformerARAP")
+deformerTypes = ["cageDeformer","cageDeformerARAP"]
 
-except:
-    print("Plugin already loaded")
-    
+for type in deformerTypes:
+    try:
+        cmds.loadPlugin(type)
+    except:
+        print("Plugin %s already loaded" %(type))
+
+
 class UI_CageDeformer:
     uiID = "CageDeformer"
     title = "CageDeformerPlugin"
 
-    deformers = []
-    
     def __init__(self):
         if pm.window(self.uiID, exists=True):
             pm.deleteUI(self.uiID)
         win = pm.window(self.uiID, title=self.title, menuBar=True)
         with win:
             pm.menu( label='CageDeformer', tearOff=True )
-            pm.menuItem( label="CageDeformer", c=pm.Callback( self.initPlugin, "cage") )
-            pm.menuItem( label="CageDeformerARAP", c=pm.Callback( self.initPlugin, "cageARAP") )
+            for type in deformerTypes:
+                pm.menuItem( label=type, c=pm.Callback( self.initPlugin, type) )
             self._parentLayout = pm.columnLayout( adj=True )
             with self._parentLayout:
                 self.createUISet()
@@ -46,51 +46,76 @@ class UI_CageDeformer:
         self._childLayout = pm.columnLayout( adj=True )
         with self._childLayout:
             pm.text(l="Click cage mesh first, then shift+click target mesh, and click the menu item.")
-            self.deformers = pm.ls(type="cage")
-            for i in range(len(self.deformers)):
-                frameLayout = pm.frameLayout( label=self.deformers[i].name(), collapsable = True)
+            # cageDeformer specific
+            deformers = pm.ls(type=deformerTypes[0])
+            for node in deformers:
+                frameLayout = pm.frameLayout( label=node.name(), collapsable = True)
                 with frameLayout:
-                    with pm.rowLayout(numberOfColumns=3) :
-                        pm.button( l="Del", c=pm.Callback( self.deleteNode, self.deformers[i].name()))
-                        pm.attrControlGrp( label="cage mode", attribute= self.deformers[i].cgm)
-                        pm.attrControlGrp( label="blend mode", attribute= self.deformers[i].bm)
-                    with pm.rowLayout(numberOfColumns=3) :
-                        pm.attrControlGrp( label="rotation consistency", attribute= self.deformers[i].rc)
-                        pm.attrControlGrp( label="Frechet sum", attribute= self.deformers[i].fs)                        
-            self.deformers = pm.ls(type="cageARAP")
-            for i in range(len(self.deformers)):
-                frameLayout = pm.frameLayout( label=self.deformers[i].name(), collapsable = True)
+                    self.createCommonAttr(node)
+
+            # cageDeformerARAP specific
+            deformers = pm.ls(type=deformerTypes[1])
+            for node in deformers:
+                frameLayout = pm.frameLayout( label=node.name(), collapsable = True)
                 with frameLayout:
-                    with pm.rowLayout(numberOfColumns=4) :
-                        pm.button( l="Del", c=pm.Callback( self.deleteNode, self.deformers[i].name()))
-                        pm.attrControlGrp( label="cage mode", attribute= self.deformers[i].cgm)
-                        pm.attrControlGrp( label="blend mode", attribute= self.deformers[i].bm)
-                        pm.attrControlGrp( label="constraint mode", attribute= self.deformers[i].constraintMode)
+                    self.createCommonAttr(node)
                     with pm.rowLayout(numberOfColumns=3) :
-                        pm.attrControlGrp( label="rotation consistency", attribute= self.deformers[i].rc)
-                        pm.attrControlGrp( label="Frechet sum", attribute= self.deformers[i].fs)                        
-                        pm.attrControlGrp( label="constraint weight", attribute= self.deformers[i].constraintWeight)
-                    
+                        pm.attrControlGrp( label="constraint mode", attribute= node.ctm)
+                        pm.attrFieldSliderGrp( label="constraint weight", min=0.001, max=1000, attribute=node.cw)
+                        pm.attrFieldSliderGrp(label="constraint radius", min=0.001, max=10.0, attribute=node.cr)
+                    with pm.rowLayout(numberOfColumns=3) :
+                        pm.attrFieldSliderGrp( label="iteration", min=1, max=20, attribute=node.it)
+                        pm.attrControlGrp( label="tet mode", attribute= node.tm)
+                        pm.attrFieldSliderGrp( label="translation weight", min=0.0, max=1.0, attribute=node.tw)
+                    with pm.rowLayout(numberOfColumns=2) :
+                        pm.attrControlGrp( label="Weight mode", attribute= node.wtm)
+                        pm.attrFieldSliderGrp(label="effect radius", min=0.001, max=20.0, attribute=node.md)
+
+    # initialise deformer
     def initPlugin(self, deformerType):
         meshes = pm.selected( type="transform" )
-        if len(meshes)<2:
+        if not meshes:
             return
         pm.select( meshes[-1])
         deformer = cmds.deformer(type=deformerType)[0]
-        shape=meshes[-2].getShapes()[0]
-        cmds.connectAttr(shape+".worldMesh[0]", deformer+".cageMesh")
+        if len(meshes)>1:
+            shape=meshes[-2].getShapes()[0]
+            cmds.connectAttr(shape+".worldMesh[0]", deformer+".cageMesh")
         # Make deformer weights paintable
         cmds.makePaintable(deformerType, 'weights', attrType='multiFloat', shapeMode='deformer')
         self.updateUI()
 
-    # delete deformer node
-    def deleteNode(self,name):
-        cmds.delete(name)
+    def setCage(self, node):
+        meshes = pm.selected( type="transform" )
+        if not meshes:
+            return
+        shape=meshes[-1].getShapes()[0]
+        cmds.connectAttr(shape+".worldMesh[0]", node.name()+".cageMesh")
         self.updateUI()
 
+    # draw common attributes
+    def createCommonAttr(self,node):
+        with pm.rowLayout(numberOfColumns=4):
+            pm.button( l="Delete deformer", c=pm.Callback( self.deleteNode, node ))
+            pm.button( l="Set selected as cage", c=pm.Callback( self.setCage, node))
+            pm.attrControlGrp( label="cage mode", attribute= node.cgm)
+            pm.attrControlGrp( label="blend mode", attribute= node.bm)
+        with pm.rowLayout(numberOfColumns=2) :
+            pm.attrControlGrp( label="normalise cage tet", attribute= node.nr)
+            pm.attrControlGrp( label="symmetrise face", attribute= node.sf)
+        with pm.rowLayout(numberOfColumns=3) :
+            pm.attrControlGrp( label="normExponent", attribute=node.ne)
+            pm.attrControlGrp( label="rotation consistency", attribute= node.rc)
+            pm.attrControlGrp( label="Frechet sum", attribute= node.fs)
+
+
+    # delete deformer node
+    def deleteNode(self,node):
+        cmds.delete(node.name())
+        self.updateUI()
+
+    # update UI
     def updateUI(self):
-        # update UI
         pm.deleteUI( self._childLayout )
         pm.setParent(self._parentLayout)
         self.createUISet()
-                             
