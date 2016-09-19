@@ -67,9 +67,6 @@ class UI_CageDeformer:
                         pm.attrFieldSliderGrp( label="iteration", min=1, max=20, attribute=node.it)
                         pm.attrControlGrp( label="tet mode", attribute= node.tm)
                         pm.attrFieldSliderGrp( label="translation weight", min=0.0, max=1.0, attribute=node.tw)
-                    with pm.rowLayout(numberOfColumns=2) :
-                        pm.attrControlGrp( label="Weight mode", attribute= node.wtm)
-                        pm.attrFieldSliderGrp(label="effect radius", min=0.001, max=20.0, attribute=node.md)
 
     # initialise deformer
     def initPlugin(self, deformerType):
@@ -103,10 +100,14 @@ class UI_CageDeformer:
         with pm.rowLayout(numberOfColumns=2) :
             pm.attrControlGrp( label="normalise cage tet", attribute= node.nr)
             pm.attrControlGrp( label="symmetrise face", attribute= node.sf)
-        with pm.rowLayout(numberOfColumns=3) :
-            pm.attrControlGrp( label="normExponent", attribute=node.ne)
+        with pm.rowLayout(numberOfColumns=2) :
             pm.attrControlGrp( label="rotation consistency", attribute= node.rc)
             pm.attrControlGrp( label="Frechet sum", attribute= node.fs)
+        with pm.rowLayout(numberOfColumns=4) :
+            pm.attrControlGrp( label="Weight mode", attribute= node.wtm)
+            pm.attrControlGrp( label="normExponent", attribute=node.ne)
+            pm.attrFieldSliderGrp(label="effect radius", min=0.001, max=20.0, attribute=node.er)
+            pm.attrControlGrp( label="normalise weight", attribute= node.nw)
 
 
     # delete deformer node

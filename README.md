@@ -15,8 +15,8 @@ There are two versions of deformers;
 one is simple, and the other adds ARAP modifiation.
 
 ## How to compile:
-Look at the included Xcode project file.
-For Windows users, please refer to Autodesk's web page.
+- Mac OS X: Look at the included Xcode project file
+- Other: Look at the included Makefile
 
 ## How to use:
 - put the plugins in "MAYA_PLUG_IN_PATH"

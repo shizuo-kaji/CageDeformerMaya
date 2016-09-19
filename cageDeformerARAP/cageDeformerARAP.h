@@ -55,9 +55,10 @@ public:
     static MObject      aTransWeight;
     static MObject      aSymmetricFace;
     static MObject      aWeightMode;
+    static MObject		aEffectRadius;
     static MObject      aConstraintRadius;
-    static MObject      aMaxDist;
     static MObject      aIteration;
+    static MObject      aNormaliseWeight;
     
 private:
 	void tetMatrixC(const MPointArray& p, const MIntArray& triangles, std::vector<Matrix4d>& m);

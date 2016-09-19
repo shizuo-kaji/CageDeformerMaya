@@ -22,7 +22,7 @@
 #define WM_CUTOFF_DISTANCE 1
 #define WM_DRAW 2
 #define WM_HARMONIC 3
-#define WM_HARMONIC_NEIBOUR 4
+#define WM_HARMONIC_NEIGHBOUR 4
 
 // constraint mode
 #define CONSTRAINT_NEIGHBOUR 0

@@ -41,8 +41,9 @@ MObject CageDeformerNode::aSymmetricFace;
 MObject CageDeformerNode::aNormExponent;
 MObject CageDeformerNode::aIteration;
 MObject CageDeformerNode::aWeightMode;
+MObject CageDeformerNode::aEffectRadius;
 MObject CageDeformerNode::aConstraintRadius;
-MObject CageDeformerNode::aMaxDist;
+MObject CageDeformerNode::aNormaliseWeight;
 
 double isDegenerate(MPoint a,MPoint b,MPoint c,MPoint d){
     /// check linear independency
@@ -68,7 +69,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     double constraintRadius = data.inputValue( aConstraintRadius ).asDouble();
     double transWeight = data.inputValue( aTransWeight ).asDouble();
     short weightMode = data.inputValue( aWeightMode ).asShort();
-    double maxDist = data.inputValue( aMaxDist ).asDouble();
+    double effectRadius = data.inputValue( aEffectRadius ).asDouble();
     bool symmetricFace = data.inputValue( aSymmetricFace ).asBool();
     bool normaliseTet = data.inputValue( aNormaliseTet ).asBool();
     double normExponent = data.inputValue( aNormExponent ).asDouble();
@@ -207,6 +208,18 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
                 }
             }
         }
+        // find closest point on mesh from each transformation
+        std::vector<int> closest(numCageTet);
+        for(int i=0;i<numCageTet;i++){
+            closest[i] = 0;
+            double min_d = HUGE_VAL;
+            for(int j=0;j<numPts;j++){
+                if( dist[j][i] < min_d){
+                    min_d = dist[j][i];
+                    closest[i] = j;
+                }
+            }
+        }
         
         
         // find constraint points
@@ -216,25 +229,15 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
                 constraint[i].clear();
                 for(int j=0;j<numPts;j++){
                     if(dist[j][i]<constraintRadius){
-                        constraint[i][j] = constraintWeight * pow((constraintRadius-dist[j][i])/constraintRadius,normExponent);
+                        constraint[i][j] = constraintWeight * cageTetWeight[i] *
+                        pow((constraintRadius-dist[j][i])/constraintRadius,normExponent);
                     }
                 }
             }
         }else if( constraintMode == CONSTRAINT_CLOSEST){
-            std::vector<int> closest(numCageTet);
             for(int i=0;i<numCageTet;i++){
                 constraint[i].clear();
-                closest[i] = 0;
-                double min_d = HUGE_VAL;
-                for(int j=0;j<numPts;j++){
-                    if( dist[j][i] < min_d){
-                        min_d = dist[j][i];
-                        closest[i] = j;
-                    }
-                }
-            }
-            for(int i=0;i<numCageTet;i++){
-                constraint[i][closest[i]] = constraintWeight;
+                constraint[i][closest[i]] = constraintWeight*cageTetWeight[i];
             }
         }
         
@@ -243,30 +246,61 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         if(weightMode == WM_INV_DISTANCE){
             for(int j=0;j<numTet;j++){
                 w[j].resize(numCageTet);
-                double sum=0;
-                std::vector<double> idist(numCageTet);
                 for( int i=0; i<numCageTet; i++){
-                    idist[i] = cageTetWeight[i]/pow(dist[tetList[4*j]][i],normExponent);
-                    sum += idist[i];
-                }
-                assert( sum > 0);
-                for( int i=0; i<numCageTet; i++){
-                    w[j][i] = idist[i]/sum;
+                    w[j][i] = cageTetWeight[i]/pow(dist[tetList[4*j]][i],normExponent);
                 }
             }
         }else if(weightMode == WM_CUTOFF_DISTANCE){
+            double delta; // avoid under determined system for MLS
+            delta = (cageMode == CM_MLS) ? EPSILON : 0;
             for(int j=0;j<numTet;j++){
                 w[j].resize(numCageTet);
-                double sum=0;
                 for( int i=0; i<numCageTet; i++){
-                    w[j][i] = (dist[tetList[4*j]][i] > maxDist)
-                    ? 0 : cageTetWeight[i]*pow((maxDist-dist[tetList[4*j]][i])/maxDist,normExponent);
-                    sum += w[j][i];
+                    w[j][i] = (dist[tetList[4*j]][i] > effectRadius)
+                    ? delta : cageTetWeight[i]*pow((effectRadius-dist[tetList[4*j]][i])/effectRadius,normExponent);
                 }
-                if(sum>1){
-                    for( int i=0; i<numCageTet; i++){
-                        w[j][i] /= sum;
+            }
+        }else if(weightMode == WM_HARMONIC || weightMode == WM_HARMONIC_NEIGHBOUR){
+            std::vector<int> fList,tList;
+            std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
+            std::vector<Matrix4d> P;
+            int d=makeFaceTet(data, input, inputGeom, mIndex, pts, fList, tList, P);
+            std::vector< std::map<int,double> > weightConstraint(numCageTet);
+            std::vector<double> weightConstraintValue(0);
+            for(int i=0;i<numCageTet;i++){
+                weightConstraint[i].clear();
+            }
+            if( weightMode == WM_HARMONIC_NEIGHBOUR ){
+                for(int i=0;i<numCageTet;i++){
+                    for(int j=0;j<numPts;j++){
+                        if(dist[i][j]<effectRadius){
+                            weightConstraint[i][j] = 1;
+                            weightConstraintValue.push_back(cageTetWeight[i]);
+                        }
                     }
+                }
+            }else if( weightMode == WM_HARMONIC){
+                for(int i=0;i<numCageTet;i++){
+                    weightConstraint[i][closest[i]] = 1;
+                    weightConstraintValue.push_back(cageTetWeight[i]);
+                }
+            }
+            int isError = harmonicWeight(d, P, tList, fList, weightConstraint, weightConstraintValue, ptsWeight);
+            if(isError>0) return MS::kFailure;
+            for(int i=0;i<numCageTet;i++){
+                makeTetWeightList(tetMode, tetList, faceList, edgeList, vertexList, ptsWeight[i], w_tet[i]);
+                for(int j=0;j<numTet;j++){
+                    w[j][i] = w_tet[i][j];
+                }
+            }
+        }
+        // normalise weights
+        bool normaliseWeight = data.inputValue( aNormaliseWeight ).asBool();
+        for(int j=0;j<numTet;j++){
+            double sum = std::accumulate(w[j].begin(), w[j].end(), 0.0);
+            if (sum > 1 || normaliseWeight || cageMode == CM_MLS){
+                for (int i = 0; i < numCageTet; i++){
+                    w[j][i] /= sum;
                 }
             }
         }
@@ -369,7 +403,8 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         for (int j = 0; j < numTet; j++){
             // blend matrix
             if (blendMode == BM_SRL){
-                blendedS[j] = frechetSum ? frechetSym(S, w[j]) : expSym(blendMat(logS, w[j]));
+                blendedS[j] = expSym(blendMat(logS, w[j]));
+//                blendedS[j] = frechetSum ? frechetSym(S, w[j]) : expSym(blendMat(logS, w[j]));
                 Vector3d l = blendMat(L, w[j]);
                 blendedR[j] = frechetSum ? frechetSO(R, w[j]) : expSO(blendMat(logR, w[j]));
                 A[j] = pad(blendedS[j]*blendedR[j], l);
@@ -515,12 +550,6 @@ MStatus CageDeformerNode::initialize()
 	attributeAffects( aTransWeight, outputGeom );
     attributeAffects( aTransWeight, aARAP );
     
-    aMaxDist = nAttr.create("maxDistance", "md", MFnNumericData::kDouble, 8.0);
-    nAttr.setStorable(true);
-	addAttribute( aMaxDist );
-	attributeAffects( aMaxDist, outputGeom );
-    attributeAffects( aMaxDist, aARAP );
-    
     aBlendMode = eAttr.create( "blendMode", "bm", BM_SRL );
     eAttr.addField( "expSO+expSym", BM_SRL );
     eAttr.addField( "expSE+expSym", BM_SSE );
@@ -533,9 +562,17 @@ MStatus CageDeformerNode::initialize()
     addAttribute( aBlendMode );
     attributeAffects( aBlendMode, outputGeom );
     
+    aNormaliseWeight = nAttr.create( "normaliseWeight", "nw", MFnNumericData::kBoolean, true );
+    nAttr.setStorable(true);
+    addAttribute( aNormaliseWeight );
+    attributeAffects( aNormaliseWeight, outputGeom );
+    attributeAffects( aNormaliseWeight, aARAP );
+    
     aWeightMode = eAttr.create( "weightMode", "wtm", WM_INV_DISTANCE );
     eAttr.addField( "inverse", WM_INV_DISTANCE );
     eAttr.addField( "cut-off", WM_CUTOFF_DISTANCE );
+    eAttr.addField( "harmonic-closest", WM_HARMONIC);
+    eAttr.addField( "harmonic-neibour", WM_HARMONIC_NEIGHBOUR);
     eAttr.setStorable(true);
     addAttribute( aWeightMode );
     attributeAffects( aWeightMode, outputGeom );
@@ -583,6 +620,13 @@ MStatus CageDeformerNode::initialize()
 	addAttribute( aNormExponent );
 	attributeAffects( aNormExponent, outputGeom );
     attributeAffects( aNormExponent, aARAP );
+
+    aEffectRadius = nAttr.create("effectRadius", "er", MFnNumericData::kDouble, 8.0);
+    nAttr.setMin( EPSILON );
+    nAttr.setStorable(true);
+    addAttribute( aEffectRadius );
+    attributeAffects( aEffectRadius, outputGeom );
+    attributeAffects( aEffectRadius, aARAP );
 
     return MS::kSuccess;
 }

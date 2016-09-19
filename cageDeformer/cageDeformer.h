@@ -33,7 +33,9 @@ public:
     static MObject      aNormExponent;
     static MObject      aNormaliseTet;
     static MObject      aWeightMode;
+    static MObject		aEffectRadius;
     static MObject      aReconstructCage;
+    static MObject      aNormaliseWeight;
 
 private:
 	void MVC(const std::vector<Vector3d>& pts, const std::vector<Vector3d>& cagePoints,

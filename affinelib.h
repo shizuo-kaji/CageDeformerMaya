@@ -408,7 +408,7 @@ namespace AffineLib{
             }
             W = (W+W.transpose())/2;
             if(W.squaredNorm()<EPSILON) break;
-            Z = Z * expSO(W);
+            Z = Z * expSym(W);
         }
         return(Z);
     }

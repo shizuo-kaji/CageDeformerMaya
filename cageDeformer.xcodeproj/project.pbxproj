@@ -52,7 +52,6 @@
 
 /* Begin PBXFileReference section */
 		2A24D5841D8BE912009C5678 /* deformerConst.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = deformerConst.h; path = ../deformerConst.h; sourceTree = "<group>"; };
-		2A32A3AB198E09350017DB40 /* ui_cageDeformer.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = ui_cageDeformer.py; path = ../../Maya/plugin_deformer/ui_cageDeformer.py; sourceTree = "<group>"; };
 		2AA6F2121920C94E005B4AF8 /* cageDeformer.bundle */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = cageDeformer.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		2AA6F2151920C94E005B4AF8 /* cageDeformer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cageDeformer.cpp; sourceTree = "<group>"; };
 		2AA6F2171920C94E005B4AF8 /* StdAfx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StdAfx.cpp; sourceTree = "<group>"; };
@@ -99,7 +98,6 @@
 				2A24D5841D8BE912009C5678 /* deformerConst.h */,
 				2AD556A2198ED9A9001F79B2 /* affinelib.h */,
 				2AD556A3198ED9A9001F79B2 /* tetrise.h */,
-				2A32A3AB198E09350017DB40 /* ui_cageDeformer.py */,
 				2AA6F23A1920CF8D005B4AF8 /* LICENSE */,
 				2AA6F23B1920CF8D005B4AF8 /* README.md */,
 				2AA6F2141920C94E005B4AF8 /* cageDeformer */,

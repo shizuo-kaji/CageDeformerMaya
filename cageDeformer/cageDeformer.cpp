@@ -35,6 +35,8 @@ MObject CageDeformerNode::aNormExponent;
 MObject CageDeformerNode::aWeightMode;
 MObject CageDeformerNode::aNormaliseTet;
 MObject CageDeformerNode::aReconstructCage;
+MObject CageDeformerNode::aEffectRadius;
+MObject CageDeformerNode::aNormaliseWeight;
 
 void* CageDeformerNode::creator() { return new CageDeformerNode; }
  
@@ -50,6 +52,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
 	bool frechetSum = data.inputValue( aFrechetSum ).asBool();
     bool symmetricFace = data.inputValue( aSymmetricFace ).asBool();
     bool normaliseTet = data.inputValue( aNormaliseTet ).asBool();
+    double effectRadius = data.inputValue( aEffectRadius ).asDouble();
     double normExponent = data.inputValue( aNormExponent ).asDouble();
     if ( oCageMesh.isNull() || blendMode == BM_OFF)
         return MS::kSuccess;
@@ -86,13 +89,11 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     // when cage mode is changed
     if(!data.isClean(aReconstructCage) || cageChanged){
         std::vector<int> cageFaceCount(0);
-        // face list
-        makeFaceList( initCageMesh, cageFaceList, cageFaceCount, symmetricFace);
         
         if( cageMode == TM_FACE || cageMode == TM_EDGE || cageMode == TM_VERTEX || cageMode == TM_VFACE){
             // set cage tetrahedra
+            makeFaceList( initCageMesh, cageFaceList, cageFaceCount, symmetricFace);
             std::vector<Matrix4d> initCageMatrix;
-            makeFaceList(initCageMesh, cageFaceList, cageFaceCount);
             makeVertexList(initCageMesh, cageVertexList);
             makeEdgeList(cageFaceList, cageEdgeList);
             makeTetList(cageMode, numCagePts, cageFaceList, cageEdgeList, cageVertexList, cageTetList);
@@ -109,117 +110,139 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             for(int i=0;i<numCageTet;i++){
                 cageMatrixI[i] = initCageMatrix[i].inverse().eval();
             }
+        }else{
+            numCageTet = numCagePts;
+        }
 
         // weight computation
-            std::vector<double> cageTetWeight(numCageTet,1.0);
-            w.resize(numPts);
-            std::vector< std::vector<double> > distPts(numPts);
-            for(int j=0;j<numPts;j++){
-                distPts[j].resize(numCageTet);
-                w[j].resize(numCageTet);
-            }
-            switch (cageMode){
-                case TM_FACE:
+        std::vector<double> cageTetWeight(numCageTet,1.0);
+        w.resize(numPts);
+        std::vector< std::vector<double> > distPts(numPts);
+        for(int j=0;j<numPts;j++){
+            distPts[j].resize(numCageTet);
+            w[j].resize(numCageTet);
+        }
+        // first, compute the distance between cage transforms and mesh points
+        switch (cageMode){
+            case TM_FACE:
+            {
+                for(int i=0;i<numCageTet;i++){
+                    cageTetWeight[i] /= cageFaceCount[i];
+                }
+                for(int j=0;j<numPts;j++){
                     for(int i=0;i<numCageTet;i++){
-                        cageTetWeight[i] /= cageFaceCount[i];
+                        Vector3d a=initCagePts[cageTetList[4*i]];
+                        Vector3d b=initCagePts[cageTetList[4*i+1]];
+                        Vector3d c=initCagePts[cageTetList[4*i+2]];
+                        distPts[j][i] = distPtTri(pts[j], a,b,c);
                     }
-                    for(int j=0;j<numPts;j++){
-                        for(int i=0;i<numCageTet;i++){
-                            Vector3d a=initCagePts[cageTetList[4*i]];
-                            Vector3d b=initCagePts[cageTetList[4*i+1]];
-                            Vector3d c=initCagePts[cageTetList[4*i+2]];
-                            distPts[j][i] = distPtTri(pts[j], a,b,c);
-                        }
-                    }
-                    break;
-                case TM_EDGE:
-                    for(int i=0;i<cageEdgeList.size();i++){
-                        for(int k=0;k<2;k++){
-                            cageTetWeight[2*i+k] /= cageFaceCount[cageEdgeList[i].faces[k]];
-                        }
-                    }
-                    for(int j=0;j<numPts;j++){
-                        for(int i=0;i<numCageTet;i++){
-                            Vector3d a=initCagePts[cageTetList[4*i]];
-                            Vector3d b=initCagePts[cageTetList[4*i+1]];
-                            distPts[j][i] = distPtLin(pts[j], a,b);
-                        }
-                    }
-                    break;
-                case TM_VERTEX:
-                case TM_VFACE:
-                    // setting weights
-                    int cur=0;
-                    for(int i=0;i<numCagePts;i++){
-                        for(int k=0;k<cageVertexList[i].connectedTriangles.size()/2;k++){
-                            cageTetWeight[cur] /= cageVertexList[i].connectedTriangles.size()/2;
-                            cur++;
-                        }
-                    }
-                    for(int j=0;j<numPts;j++){
-                        for(int i=0;i<numCageTet;i++){
-                            distPts[j][i] = (pts[j]-cageTetCenter[i]).norm();
-                        }
-                    }
-                    break;
+                }
+                break;
             }
-            if(weightMode == WM_INV_DISTANCE){
-                for(int j=0; j<numPts; j++ ){
+            case TM_EDGE:
+            {
+                for(int i=0;i<cageEdgeList.size();i++){
+                    for(int k=0;k<2;k++){
+                        cageTetWeight[2*i+k] /= cageFaceCount[cageEdgeList[i].faces[k]];
+                    }
+                }
+                for(int j=0;j<numPts;j++){
                     for(int i=0;i<numCageTet;i++){
-                        w[j][i] = cageTetWeight[i] / pow(distPts[j][i],normExponent);
+                        Vector3d a=initCagePts[cageTetList[4*i]];
+                        Vector3d b=initCagePts[cageTetList[4*i+1]];
+                        distPts[j][i] = distPtLin(pts[j], a,b);
                     }
                 }
-            }else if(weightMode == WM_HARMONIC){
-                std::vector<int> fList,tList;
-                std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
-                std::vector<Matrix4d> P;
-                int d=makeFaceTet(data, input, inputGeom, mIndex, pts, fList, tList, P);
-                std::vector< std::map<int,double> > weightConstraint(numCageTet);
-                std::vector<double> weightConstraintValue(0);
-                for(int i=0;i<numCageTet;i++){
-                    weightConstraint[i].clear();
-                }
-                std::vector<int> closestPts(numCageTet);
-                for(int i=0;i<numCageTet;i++){
-                    weightConstraint[i].clear();
-                    closestPts[i] = 0;
-                    double min_d = HUGE_VAL;
-                    for(int j=0;j<numPts;j++){
-                        if( distPts[j][i] < min_d){
-                            min_d = distPts[j][i];
-                            closestPts[i] = j;
-                        }
-                    }
-                }
-                for(int i=0;i<numCageTet;i++){
-                    weightConstraint[i][closestPts[i]] = 1;
-                    weightConstraintValue.push_back(1);
-                }
-                int isError = harmonicWeight(d, P, tList, fList, weightConstraint, weightConstraintValue, ptsWeight);
-                if(isError>0) return MS::kFailure;
-                for(int i=0;i<numCageTet;i++){
-                    for(int j=0;j<numPts;j++){
-                        w[j][i] = ptsWeight[i][j];
-                    }
-                }
+                break;
             }
-        }else if(cageMode == CM_MVC){
-			MVC(pts, initCagePts, cageFaceList, w);
-        }else if(cageMode == CM_MLS){
-            w.resize(numPts);
-            for(int j=0;j<numPts;j++){
-                w[j].resize(numCagePts);
+            case TM_VERTEX:
+            case TM_VFACE:
+            {
+                int cur=0;
                 for(int i=0;i<numCagePts;i++){
-                    w[j][i] = 1.0 / pow((pts[j]-initCagePts[i]).norm(),normExponent);
+                    for(int k=0;k<cageVertexList[i].connectedTriangles.size()/2;k++){
+                        cageTetWeight[cur] /= cageVertexList[i].connectedTriangles.size()/2;
+                        cur++;
+                    }
+                }
+                for(int j=0;j<numPts;j++){
+                    for(int i=0;i<numCageTet;i++){
+                        distPts[j][i] = (pts[j]-cageTetCenter[i]).norm();
+                    }
+                }
+                break;
+            }
+            case CM_MLS:
+            {
+                for(int j=0;j<numPts;j++){
+                    for(int i=0;i<numCagePts;i++){
+                        distPts[j][i] = (pts[j]-initCagePts[i]).norm();
+                    }
+                }
+                break;
+            }
+        }
+
+        //
+        if(cageMode == CM_MVC){
+            MVC(pts, initCagePts, cageFaceList, w);
+        }else if(weightMode == WM_INV_DISTANCE){
+            for(int j=0; j<numPts; j++ ){
+                for(int i=0;i<numCageTet;i++){
+                    w[j][i] = cageTetWeight[i] / pow(distPts[j][i],normExponent);
+                }
+            }
+        }else if(weightMode == WM_CUTOFF_DISTANCE){
+            double delta;  // avoid under determined system for MLS
+            delta = (cageMode == CM_MLS) ? EPSILON : 0;
+            for(int j=0; j<numPts; j++ ){
+                for( int i=0; i<numCageTet; i++){
+                    w[j][i] = (distPts[j][i] > effectRadius)
+                    ? delta : cageTetWeight[i]*pow((effectRadius-distPts[j][i])/effectRadius,normExponent);
+                }
+            }
+        }else if(weightMode == WM_HARMONIC){
+            std::vector<int> fList,tList;
+            std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
+            std::vector<Matrix4d> P;
+            int d=makeFaceTet(data, input, inputGeom, mIndex, pts, fList, tList, P);
+            std::vector< std::map<int,double> > weightConstraint(numCageTet);
+            std::vector<double> weightConstraintValue(0);
+            for(int i=0;i<numCageTet;i++){
+                weightConstraint[i].clear();
+            }
+            std::vector<int> closestPts(numCageTet);
+            for(int i=0;i<numCageTet;i++){
+                weightConstraint[i].clear();
+                closestPts[i] = 0;
+                double min_d = HUGE_VAL;
+                for(int j=0;j<numPts;j++){
+                    if( distPts[j][i] < min_d){
+                        min_d = distPts[j][i];
+                        closestPts[i] = j;
+                    }
+                }
+            }
+            for(int i=0;i<numCageTet;i++){
+                weightConstraint[i][closestPts[i]] = 1;
+                weightConstraintValue.push_back(1);
+            }
+            int isError = harmonicWeight(d, P, tList, fList, weightConstraint, weightConstraintValue, ptsWeight);
+            if(isError>0) return MS::kFailure;
+            for(int i=0;i<numCageTet;i++){
+                for(int j=0;j<numPts;j++){
+                    w[j][i] = ptsWeight[i][j];
                 }
             }
         }
-        // weight normalisation
+        // normalise weights
+        bool normaliseWeight = data.inputValue( aNormaliseWeight ).asBool();
         for(int j=0;j<numPts;j++){
-            double sum=std::accumulate(w[j].begin(), w[j].end(), 0.0);
-            assert(sum>0);
-            for(int i=0;i<w[j].size();i++){
-                w[j][i] /= sum;
+            double sum = std::accumulate(w[j].begin(), w[j].end(), 0.0);
+            if (sum > 1 || normaliseWeight || cageMode == CM_MLS){
+                for (int i = 0; i < numCageTet; i++){
+                    w[j][i] /= sum;
+                }
             }
         }
         data.setClean(aReconstructCage);
@@ -456,15 +479,28 @@ MStatus CageDeformerNode::initialize(){
     addAttribute( aFrechetSum );
     attributeAffects( aFrechetSum, outputGeom );
 
+    aNormaliseWeight = nAttr.create( "normaliseWeight", "nw", MFnNumericData::kBoolean, true );
+    nAttr.setStorable(true);
+    addAttribute( aNormaliseWeight );
+    attributeAffects( aNormaliseWeight, outputGeom );
+    attributeAffects( aNormaliseWeight, aReconstructCage );
+
     aWeightMode = eAttr.create( "weightMode", "wtm", WM_INV_DISTANCE );
     eAttr.addField( "inverse", WM_INV_DISTANCE );
-//    eAttr.addField( "cut-off", WM_CUTOFF_DISTANCE );
+    eAttr.addField( "cut-off", WM_CUTOFF_DISTANCE );
     eAttr.addField( "harmonic", WM_HARMONIC );
     eAttr.setStorable(true);
     addAttribute( aWeightMode );
     attributeAffects( aWeightMode, outputGeom );
     attributeAffects( aWeightMode, aReconstructCage );
 
+    aEffectRadius = nAttr.create("effectRadius", "er", MFnNumericData::kDouble, 8.0);
+    nAttr.setMin( EPSILON );
+    nAttr.setStorable(true);
+    addAttribute( aEffectRadius );
+    attributeAffects( aEffectRadius, outputGeom );
+    attributeAffects( aEffectRadius, aReconstructCage  );
+    
     aNormExponent = nAttr.create("normExponent", "ne", MFnNumericData::kDouble, 2.0);
     nAttr.setStorable(true);
 	addAttribute( aNormExponent );
