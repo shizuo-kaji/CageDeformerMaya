@@ -36,7 +36,8 @@ public:
     static MObject		aEffectRadius;
     static MObject      aReconstructCage;
     static MObject      aNormaliseWeight;
-
+    static MObject      aAreaWeighted;
+    
 private:
 	void MVC(const std::vector<Vector3d>& pts, const std::vector<Vector3d>& cagePoints,
              const std::vector<int>& cageFaceList, std::vector< std::vector<double> >& w);
@@ -51,6 +52,7 @@ private:
     std::vector< edge > cageEdgeList;
     std::vector<vertex> cageVertexList;
     std::vector<Vector3d> initCagePts;
+    std::vector<double> cageTetWeight;
     //  find affine transformations for tetrahedra
     std::vector<Matrix4d> cageMatrix, SE, logAff,Aff;
     std::vector<Matrix3d> R,logS,S,logGL;

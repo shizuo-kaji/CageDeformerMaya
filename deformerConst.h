@@ -23,6 +23,7 @@
 #define WM_DRAW 2
 #define WM_HARMONIC 3
 #define WM_HARMONIC_NEIGHBOUR 4
+#define WM_HARMONIC_COTAN 5
 
 // constraint mode
 #define CONSTRAINT_NEIGHBOUR 0

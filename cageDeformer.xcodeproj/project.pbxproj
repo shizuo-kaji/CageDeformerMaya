@@ -285,8 +285,11 @@
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
+					MAC_PLUGIN,
+					_BOOL,
+					REQUIRE_IOSTREAM,
+					OSMac_,
+					DEBUG,
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -327,6 +330,12 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					MAC_PLUGIN,
+					_BOOL,
+					REQUIRE_IOSTREAM,
+					OSMac_,
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -348,12 +357,6 @@
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = bundle;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					MAC_PLUGIN,
-					_BOOL,
-					REQUIRE_IOSTREAM,
-				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
@@ -378,7 +381,6 @@
 					"-lFoundation",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
 				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
@@ -391,12 +393,6 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = bundle;
-				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					MAC_PLUGIN,
-					_BOOL,
-					REQUIRE_IOSTREAM,
-				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
@@ -421,7 +417,6 @@
 					"-lFoundation",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
 				VALID_ARCHS = x86_64;
 			};
 			name = Release;
@@ -435,12 +430,6 @@
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = bundle;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					MAC_PLUGIN,
-					_BOOL,
-					REQUIRE_IOSTREAM,
-				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
@@ -465,7 +454,6 @@
 					"-lFoundation",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
 				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
@@ -478,12 +466,6 @@
 				DYLIB_COMPATIBILITY_VERSION = "";
 				DYLIB_CURRENT_VERSION = "";
 				EXECUTABLE_EXTENSION = bundle;
-				GCC_PREFIX_HEADER = "$(MAYA_LOCATION)/devkit/include/maya/OpenMayaMac.h";
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					MAC_PLUGIN,
-					_BOOL,
-					REQUIRE_IOSTREAM,
-				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
@@ -508,7 +490,6 @@
 					"-lFoundation",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_LOCATION = "$(HOME)/Library/Preferences/Autodesk/maya/2014-x64";
 				VALID_ARCHS = x86_64;
 			};
 			name = Release;

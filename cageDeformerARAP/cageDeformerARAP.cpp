@@ -44,6 +44,7 @@ MObject CageDeformerNode::aWeightMode;
 MObject CageDeformerNode::aEffectRadius;
 MObject CageDeformerNode::aConstraintRadius;
 MObject CageDeformerNode::aNormaliseWeight;
+MObject CageDeformerNode::aAreaWeighted;
 
 double isDegenerate(MPoint a,MPoint b,MPoint c,MPoint d){
     /// check linear independency
@@ -73,6 +74,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     bool symmetricFace = data.inputValue( aSymmetricFace ).asBool();
     bool normaliseTet = data.inputValue( aNormaliseTet ).asBool();
     double normExponent = data.inputValue( aNormExponent ).asDouble();
+    bool areaWeighted = data.inputValue( aAreaWeighted ).asBool();
     bool arap_flag = false;
     // load cage
     if ( oCageMesh.isNull() || blendMode == BM_OFF)
@@ -110,17 +112,15 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             pts[j] << Mpts[j].x, Mpts[j].y, Mpts[j].z;
         }
         std::vector<Matrix4d> P;
-        getMeshData(data, input, inputGeom, mIndex, tetMode, pts, tetList, faceList, edgeList, vertexList, P);
+        getMeshData(data, input, inputGeom, mIndex, tetMode, pts, tetList, faceList, edgeList, vertexList, P, tetWeight);
         dim = removeDegenerate(tetMode, numPts, tetList, faceList, edgeList, vertexList, P);
-        makeTetMatrix(tetMode, pts, tetList, faceList, edgeList, vertexList, P);
+        makeTetMatrix(tetMode, pts, tetList, faceList, edgeList, vertexList, P, tetWeight);
         //makeTetCenterList(tetMode, pts, tetList, tetCenter);
         numTet = (int)tetList.size()/4;
         PI.resize(numTet);
         for(int i=0;i<numTet;i++){
             PI[i] = P[i].inverse().eval();
         }
-        tetWeight.clear();
-        tetWeight.resize(numTet,1.0);     // TODO:stiffness
         
         // prepare cage tetrahedra
         std::vector<int> cageFaceCount(0);
@@ -132,13 +132,8 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             makeVertexList(initCageMesh, cageVertexList);
             makeEdgeList(cageFaceList, cageEdgeList);
             makeTetList(cageMode, numCagePts, cageFaceList, cageEdgeList, cageVertexList, cageTetList);
-            if(normaliseTet){
-                tetMatrixNormalised(cageMode, initCagePts, cageTetList, cageFaceList, cageEdgeList,
-                                    cageVertexList, initCageMatrix);
-            }else{
-                makeTetMatrix(cageMode, initCagePts, cageTetList, cageFaceList, cageEdgeList,
-                              cageVertexList, initCageMatrix);
-            }
+            makeTetMatrix(cageMode, initCagePts, cageTetList, cageFaceList, cageEdgeList,
+                              cageVertexList, initCageMatrix, cageTetWeight, normaliseTet);
             makeTetCenterList(cageMode, initCagePts, cageTetList, cageTetCenter);
             numCageTet = (int) cageTetList.size()/4;
             cageMatrixI.resize(numCageTet);
@@ -149,9 +144,13 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             numCageTet = numCagePts;
         }
         
+        if(!areaWeighted){
+            cageTetWeight.clear();
+            cageTetWeight.resize(numCageTet,1.0);
+            tetWeight.clear();
+            tetWeight.resize(numTet,1.0);
+        }
         // set effect weight for cage tet
-        cageTetWeight.clear();
-        cageTetWeight.resize(numCageTet,1.0);
         if(cageMode == TM_FACE){
             for(int i=0;i<numCageTet;i++){
                 cageTetWeight[i] /= cageFaceCount[i];
@@ -262,9 +261,10 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             }
         }else if(weightMode == WM_HARMONIC || weightMode == WM_HARMONIC_NEIGHBOUR){
             std::vector<int> fList,tList;
+            std::vector<double> fWeight;
             std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
             std::vector<Matrix4d> P;
-            int d=makeFaceTet(data, input, inputGeom, mIndex, pts, fList, tList, P);
+            int d=makeFaceTet(data, input, inputGeom, mIndex, pts, fList, tList, P, fWeight);
             std::vector< std::map<int,double> > weightConstraint(numCageTet);
             std::vector<double> weightConstraintValue(0);
             for(int i=0;i<numCageTet;i++){
@@ -285,7 +285,11 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
                     weightConstraintValue.push_back(cageTetWeight[i]);
                 }
             }
-            int isError = harmonicWeight(d, P, tList, fList, weightConstraint, weightConstraintValue, ptsWeight);
+            if(!areaWeighted){
+                fWeight.clear();
+                fWeight.resize(P.size(),1.0);
+            }
+            int isError = harmonicWeight(numPts, P, tList, fWeight, weightConstraint, weightConstraintValue, ptsWeight);
             if(isError>0) return MS::kFailure;
             for(int i=0;i<numCageTet;i++){
                 makeTetWeightList(tetMode, tetList, faceList, edgeList, vertexList, ptsWeight[i], w_tet[i]);
@@ -360,13 +364,9 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             Aff[i]=pad(Matrix3d::Identity().eval(),cagePts[i]-initCagePts[i]);
         }
     }else{
-        if(normaliseTet){
-            tetMatrixNormalised(cageMode, cagePts, cageTetList, cageFaceList, cageEdgeList,
-                                cageVertexList, cageMatrix);
-        }else{
-            makeTetMatrix(cageMode, cagePts, cageTetList, cageFaceList, cageEdgeList,
-                          cageVertexList, cageMatrix);
-        }
+        std::vector<double> dummy_weight;
+        makeTetMatrix(cageMode, cagePts, cageTetList, cageFaceList, cageEdgeList,
+                      cageVertexList, cageMatrix, dummy_weight, normaliseTet);
         for(int i=0; i<numCageTet; i++)
             Aff[i]=cageMatrixI[i]*cageMatrix[i];
         
@@ -466,8 +466,8 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         }
         // if iteration continues
         if(k+1<numIter){
-            Q.resize(numTet);
-            makeTetMatrix(tetMode, new_pts, tetList, faceList, edgeList, vertexList, Q);
+            std::vector<double> dummy_weight;
+            makeTetMatrix(tetMode, new_pts, tetList, faceList, edgeList, vertexList, Q, dummy_weight);
             Matrix3d S,R,newS,newR;
             if(blendMode == BM_AFF || blendMode == BM_LOG4 || blendMode == BM_LOG3 || cageMode == CM_MLS){
                 for(int i=0;i<numTet;i++){
@@ -572,7 +572,7 @@ MStatus CageDeformerNode::initialize()
     eAttr.addField( "inverse", WM_INV_DISTANCE );
     eAttr.addField( "cut-off", WM_CUTOFF_DISTANCE );
     eAttr.addField( "harmonic-closest", WM_HARMONIC);
-    eAttr.addField( "harmonic-neibour", WM_HARMONIC_NEIGHBOUR);
+    eAttr.addField( "harmonic-neighbour", WM_HARMONIC_NEIGHBOUR);
     eAttr.setStorable(true);
     addAttribute( aWeightMode );
     attributeAffects( aWeightMode, outputGeom );
@@ -600,6 +600,12 @@ MStatus CageDeformerNode::initialize()
     attributeAffects( aSymmetricFace, outputGeom );
     attributeAffects( aSymmetricFace, aARAP );
 
+    aAreaWeighted = nAttr.create( "areaWeighted", "aw", MFnNumericData::kBoolean, false );
+    nAttr.setStorable(true);
+    addAttribute( aAreaWeighted );
+    attributeAffects( aAreaWeighted, outputGeom );
+    attributeAffects( aAreaWeighted, aARAP );
+    
 	aRotationConsistency = nAttr.create( "rotationConsistency", "rc", MFnNumericData::kBoolean, 0 );
     nAttr.setStorable(true);
     addAttribute( aRotationConsistency );

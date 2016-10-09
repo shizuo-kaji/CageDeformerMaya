@@ -59,6 +59,7 @@ public:
     static MObject      aConstraintRadius;
     static MObject      aIteration;
     static MObject      aNormaliseWeight;
+    static MObject      aAreaWeighted;
     
 private:
 	void tetMatrixC(const MPointArray& p, const MIntArray& triangles, std::vector<Matrix4d>& m);

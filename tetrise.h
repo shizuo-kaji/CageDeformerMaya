@@ -27,7 +27,7 @@
 #define TM_FACE 0
 #define TM_EDGE 1
 #define TM_VERTEX 2
-#define TM_VFACE 10   // for each vertex, gathering faces+normal
+#define TM_VFACE 10   // for each vertex and an adjacent face, make a tet by adding the face normal to the vertex
 
 
 /// threshold for being zero
@@ -260,38 +260,51 @@ namespace Tetrise{
         // construct tetrahedra matrices
     void makeTetMatrix(short tetMode, const std::vector<Vector3d>& pts, const std::vector<int>& tetList,
         const std::vector<int>& faceList, const std::vector<edge>& edgeList,
-                    const std::vector<vertex>& vertexList, std::vector<Matrix4d>& P){
+                    const std::vector<vertex>& vertexList, std::vector<Matrix4d>& P, std::vector<double>& tetWeight, bool normalise=false){
         Vector3d u, v, q, c;
         int numTet = (int)tetList.size()/4;
         P.clear();
         P.reserve(numTet);
-        if(tetMode == TM_FACE || tetMode == TM_VFACE){
+        tetWeight.clear();
+        tetWeight.reserve(numTet);
+        if(tetMode == TM_FACE){
             for(int i=0;i<numTet;i++){
                 Vector3d p0=pts[tetList[4*i]];
                 Vector3d p1=pts[tetList[4*i+1]];
                 Vector3d p2=pts[tetList[4*i+2]];
                 q = (p1-p0).cross(p2-p0);
-                c = q/sqrt(q.norm())+(p0+p1+p2)/3;
+                tetWeight.push_back(q.norm()/2);
+                if(normalise){
+                    q.normalize();
+                }else{
+                    q = (q/sqrt(q.norm()));
+                }
+                c = q +(p0+p1+p2)/3;
                 P.push_back(mat(p0,p1,p2,c));
             }
         }else if(tetMode == TM_EDGE){
             for(int i=0;i<edgeList.size();i++){
                 c = Vector3d::Zero();
                 for(int j=0;j<2;j++){
-                    int f=edgeList[i].faces[j];
-                    u=pts[faceList[3*f+1]]-pts[faceList[3*f]];
-                    v=pts[faceList[3*f+2]]-pts[faceList[3*f]];
-                    q=u.cross(v).normalized();
+                    Vector3d p0=pts[tetList[8*i + 4*j]];
+                    Vector3d p1=pts[tetList[8*i + 4*j + 1]];
+                    Vector3d p2=pts[tetList[8*i + 4*j + 2]];
+                    q=(p1-p0).cross(p2-p0).normalized();
                     c += q;
                 }
                 u = pts[edgeList[i].vertices[0]];
                 v = pts[edgeList[i].vertices[1]];
-                c = (u+v)/2 + (u-v).norm() * c.normalized();
+                if(normalise){
+                    c = (u+v)/2 + c.normalized();
+                }else{
+                    c = (u+v)/2 + (u-v).norm() * c.normalized();
+                }
                 for(int j=0;j<2;j++){
                     Vector3d p0=pts[tetList[8*i + 4*j]];
                     Vector3d p1=pts[tetList[8*i + 4*j + 1]];
                     Vector3d p2=pts[tetList[8*i + 4*j + 2]];
                     P.push_back(mat(p0,p1,p2,c));
+                    tetWeight.push_back((p0-p1).norm());
                 }
             }
         }else if(tetMode == TM_VERTEX){
@@ -304,72 +317,40 @@ namespace Tetrise{
                     p1 = pts[vertexList[i].connectedTriangles[2*j]];
                     p2 = pts[vertexList[i].connectedTriangles[2*j+1]];
                     q = (p1-p0).cross(p2-p0);
+                    tetWeight.push_back(q.norm()/2);
                     area += q.norm()/2;
                     c += q.normalized();
                 }
-                c = p0 + sqrt(area)*(c.normalized());
+                if(normalise){
+                    c =p0+c.normalized();
+                }else{
+                    c = p0 + sqrt(area)*(c.normalized());
+                }
                 for(int j=0;j<vertexList[i].connectedTriangles.size()/2;j++){
                     p1 = pts[vertexList[i].connectedTriangles[2*j]];
                     p2 = pts[vertexList[i].connectedTriangles[2*j+1]];
-                    P.push_back( mat(p0,p1,p2,c));
-                }
-            }
-        }
-    }
-    
-    // construct tetrahedra matrices with normalised edges ( for use with cage )
-    void tetMatrixNormalised(short tetMode, const std::vector<Vector3d>& pts, const std::vector<int>& tetList,
-                   const std::vector<int>& faceList, const std::vector<edge>& edgeList,
-                   const std::vector<vertex>& vertexList, std::vector<Matrix4d>& P){
-        Vector3d u, v, q, c;
-        int numTet = (int)tetList.size()/4;
-        P.clear();
-        if( tetMode == TM_FACE ){
-            P.resize(numTet);
-            for(int i=0;i<numTet;i++){
-                Vector3d p0=pts[tetList[4*i]];
-                Vector3d p1=pts[tetList[4*i+1]];
-                Vector3d p2=pts[tetList[4*i+2]];
-                u=p1-p0;
-                v=p2-p0;
-                q=u.cross(v).normalized();
-                c = q+(p0+p1+p2)/3;
-                P[i] = mat(p0,p1,p2,c);
-            }
-        }else if(tetMode == TM_EDGE){
-            makeTetMatrix(tetMode, pts, tetList, faceList, edgeList, vertexList, P);
-        }else if(tetMode == TM_VERTEX){
-            P.reserve(numTet);
-            for(int i=0;i<vertexList.size();i++){
-                Vector3d p0 = pts[vertexList[i].index];
-                Vector3d p1,p2,c=Vector3d::Zero();
-                for(int j=0;j<vertexList[i].connectedTriangles.size()/2;j++){
-                    p1 = pts[vertexList[i].connectedTriangles[2*j]];
-                    p2 = pts[vertexList[i].connectedTriangles[2*j+1]];
-                    c += ((p1-p0).cross(p2-p0)).normalized();
-                }
-                c = p0 + c.normalized();
-                for(int j=0;j<vertexList[i].connectedTriangles.size()/2;j++){
-                    p1 = p0+(pts[vertexList[i].connectedTriangles[2*j]]-p0); //.normalized();
-                    p2 = p0+(pts[vertexList[i].connectedTriangles[2*j+1]]-p0); //.normalized();
                     P.push_back( mat(p0,p1,p2,c));
                 }
             }
         }else if(tetMode == TM_VFACE){
-            P.resize(numTet);
             for(int i=0;i<numTet;i++){
                 Vector3d p0=pts[tetList[4*i]];
-                Vector3d p1=p0+(pts[tetList[4*i+1]]-p0).normalized();
-                Vector3d p2=p0+(pts[tetList[4*i+2]]-p0).normalized();
-                u=p1-p0;
-                v=p2-p0;
-                q=u.cross(v).normalized();
-                c = q+p0;
-                P[i] = mat(p0,p1,p2,c);
+                Vector3d p1=pts[tetList[4*i+1]];
+                Vector3d p2=pts[tetList[4*i+2]];
+                u=(p1-p0).normalized();
+                v=(p2-p0).normalized();
+                q=u.cross(v);
+                if(normalise){
+                    c = p0+q.normalized();
+                }else{
+                    c = p0+q;
+                }
+                tetWeight.push_back(q.norm()/2);
+                P.push_back(mat(p0,p1,p2,c));
             }
         }
     }
-
+    
     
     // make tetrahedra adjacency list
     void makeAdjacencyList(short tetMode, const std::vector<int>& tetList,
@@ -517,6 +498,7 @@ namespace Tetrise{
             }
         }
     }
+    
     
     /// compute distance between a line segment (ab) and a point p
     double distPtLin(Vector3d p,Vector3d a,Vector3d b){

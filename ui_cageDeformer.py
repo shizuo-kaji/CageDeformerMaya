@@ -97,9 +97,10 @@ class UI_CageDeformer:
             pm.button( l="Set selected as cage", c=pm.Callback( self.setCage, node))
             pm.attrControlGrp( label="cage mode", attribute= node.cgm)
             pm.attrControlGrp( label="blend mode", attribute= node.bm)
-        with pm.rowLayout(numberOfColumns=2) :
+        with pm.rowLayout(numberOfColumns=3) :
             pm.attrControlGrp( label="normalise cage tet", attribute= node.nr)
             pm.attrControlGrp( label="symmetrise face", attribute= node.sf)
+            pm.attrControlGrp( label="area weight", attribute= node.aw)
         with pm.rowLayout(numberOfColumns=2) :
             pm.attrControlGrp( label="rotation consistency", attribute= node.rc)
             pm.attrControlGrp( label="Frechet sum", attribute= node.fs)

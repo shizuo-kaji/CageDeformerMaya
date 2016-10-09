@@ -21,7 +21,7 @@ using namespace Tetrise;
 
 // get face list
 int makeFaceTet(MDataBlock& data, MObject& input, MObject& inputGeom, unsigned int mIndex, const std::vector<Vector3d>& pts,
-                std::vector<int>& faceList, std::vector<int>& tetList, std::vector<Matrix4d>& tetMatrix){
+                std::vector<int>& faceList, std::vector<int>& tetList, std::vector<Matrix4d>& tetMatrix, std::vector<double>& tetWeight){
     // returns total number of pts including ghost ones
     // read mesh data
     int numPts = (int) pts.size();
@@ -43,7 +43,7 @@ int makeFaceTet(MDataBlock& data, MObject& input, MObject& inputGeom, unsigned i
     std::vector<vertex> vList;
     std::vector<edge> eList;
     makeTetList(TM_FACE, numPts, faceList, eList, vList, tetList);
-    makeTetMatrix(TM_FACE, pts, tetList, faceList, eList, vList, tetMatrix);
+    makeTetMatrix(TM_FACE, pts, tetList, faceList, eList, vList, tetMatrix, tetWeight);
     return numPts + (int)tetList.size()/4;
 }
 
@@ -108,7 +108,7 @@ void makeVertexList(MObject& mesh, std::vector<vertex>& vertexList){
 int getMeshData(MDataBlock& data, MObject& input, MObject& inputGeom, unsigned int mIndex,
                 short tetMode, const std::vector<Vector3d>& pts, std::vector<int>& tetList,
                 std::vector<int>& faceList, std::vector<edge>& edgeList,
-                std::vector<vertex>& vertexList, std::vector<Matrix4d>& tetMat){
+                std::vector<vertex>& vertexList, std::vector<Matrix4d>& tetMat, std::vector<double>& tetWeight){
     // returns total number of pts including ghost ones
     // read mesh data
     int numPts = (int) pts.size();
@@ -123,7 +123,7 @@ int getMeshData(MDataBlock& data, MObject& input, MObject& inputGeom, unsigned i
     makeVertexList(oInputGeom, vertexList);
     makeEdgeList(faceList, edgeList);
     int dim=makeTetList(tetMode, numPts, faceList, edgeList, vertexList, tetList);
-    makeTetMatrix(tetMode, pts, tetList, faceList, edgeList, vertexList, tetMat);
+    makeTetMatrix(tetMode, pts, tetList, faceList, edgeList, vertexList, tetMat, tetWeight);
     return dim;
 }
 
