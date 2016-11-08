@@ -99,7 +99,7 @@ namespace AffineLib{
         return X.angle() * A;
     }
 
-    Matrix3d logSOc(const Matrix3d& m, const Matrix3d& P)
+    Matrix3d logSOc(const Matrix3d& m, const Matrix3d& P = Matrix3d::Zero())
     /** "Continuous" log for a rotational matrix
      * @param m rotational matrix
      * @param P anti-symmetric matrix

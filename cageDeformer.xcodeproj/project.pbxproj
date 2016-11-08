@@ -9,6 +9,12 @@
 /* Begin PBXBuildFile section */
 		2A24D5851D8BE912009C5678 /* deformerConst.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A24D5841D8BE912009C5678 /* deformerConst.h */; };
 		2A24D5861D8BE912009C5678 /* deformerConst.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A24D5841D8BE912009C5678 /* deformerConst.h */; };
+		2A33B3221DC9B30A00999EC2 /* blendAff.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A33B3211DC9B30A00999EC2 /* blendAff.h */; };
+		2A33B3231DC9B30A00999EC2 /* blendAff.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A33B3211DC9B30A00999EC2 /* blendAff.h */; };
+		2A33B3251DC9B31500999EC2 /* laplacian.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A33B3241DC9B31500999EC2 /* laplacian.h */; };
+		2A33B3261DC9B31500999EC2 /* laplacian.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A33B3241DC9B31500999EC2 /* laplacian.h */; };
+		2A3E02541DCAB8480041ECCC /* distance.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A3E02531DCAB8480041ECCC /* distance.h */; };
+		2A3E02551DCAB8480041ECCC /* distance.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A3E02531DCAB8480041ECCC /* distance.h */; };
 		2AA6F2161920C94E005B4AF8 /* cageDeformer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA6F2151920C94E005B4AF8 /* cageDeformer.cpp */; };
 		2AA6F2181920C94E005B4AF8 /* StdAfx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA6F2171920C94E005B4AF8 /* StdAfx.cpp */; };
 		2AA6F2211920CA42005B4AF8 /* cageDeformer.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AA6F2201920CA42005B4AF8 /* cageDeformer.h */; };
@@ -21,8 +27,6 @@
 		2AD556A5198ED9A9001F79B2 /* affinelib.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD556A2198ED9A9001F79B2 /* affinelib.h */; };
 		2AD556A6198ED9A9001F79B2 /* tetrise.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD556A3198ED9A9001F79B2 /* tetrise.h */; };
 		2AD556A7198ED9A9001F79B2 /* tetrise.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD556A3198ED9A9001F79B2 /* tetrise.h */; };
-		2AD556CA1995656D001F79B2 /* ARAP.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD556C81995656D001F79B2 /* ARAP.h */; };
-		2AD556CB1995656D001F79B2 /* ARAP.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD556C81995656D001F79B2 /* ARAP.h */; };
 		2AD556CC1995656D001F79B2 /* MeshMaya.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD556C91995656D001F79B2 /* MeshMaya.h */; };
 		2AD556CD1995656D001F79B2 /* MeshMaya.h in Headers */ = {isa = PBXBuildFile; fileRef = 2AD556C91995656D001F79B2 /* MeshMaya.h */; };
 /* End PBXBuildFile section */
@@ -52,6 +56,9 @@
 
 /* Begin PBXFileReference section */
 		2A24D5841D8BE912009C5678 /* deformerConst.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = deformerConst.h; path = ../deformerConst.h; sourceTree = "<group>"; };
+		2A33B3211DC9B30A00999EC2 /* blendAff.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = blendAff.h; path = ../blendAff.h; sourceTree = "<group>"; };
+		2A33B3241DC9B31500999EC2 /* laplacian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = laplacian.h; path = ../laplacian.h; sourceTree = "<group>"; };
+		2A3E02531DCAB8480041ECCC /* distance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = distance.h; path = ../distance.h; sourceTree = "<group>"; };
 		2AA6F2121920C94E005B4AF8 /* cageDeformer.bundle */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = cageDeformer.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		2AA6F2151920C94E005B4AF8 /* cageDeformer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cageDeformer.cpp; sourceTree = "<group>"; };
 		2AA6F2171920C94E005B4AF8 /* StdAfx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StdAfx.cpp; sourceTree = "<group>"; };
@@ -68,7 +75,6 @@
 		2AA6F23B1920CF8D005B4AF8 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		2AD556A2198ED9A9001F79B2 /* affinelib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = affinelib.h; path = ../affinelib.h; sourceTree = "<group>"; };
 		2AD556A3198ED9A9001F79B2 /* tetrise.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = tetrise.h; path = ../tetrise.h; sourceTree = "<group>"; };
-		2AD556C81995656D001F79B2 /* ARAP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ARAP.h; path = ../ARAP.h; sourceTree = "<group>"; };
 		2AD556C91995656D001F79B2 /* MeshMaya.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MeshMaya.h; path = ../MeshMaya.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -93,10 +99,12 @@
 		2AA6F2091920C94E005B4AF8 = {
 			isa = PBXGroup;
 			children = (
-				2AD556C81995656D001F79B2 /* ARAP.h */,
+				2A3E02531DCAB8480041ECCC /* distance.h */,
 				2AD556C91995656D001F79B2 /* MeshMaya.h */,
 				2A24D5841D8BE912009C5678 /* deformerConst.h */,
 				2AD556A2198ED9A9001F79B2 /* affinelib.h */,
+				2A33B3241DC9B31500999EC2 /* laplacian.h */,
+				2A33B3211DC9B30A00999EC2 /* blendAff.h */,
 				2AD556A3198ED9A9001F79B2 /* tetrise.h */,
 				2AA6F23A1920CF8D005B4AF8 /* LICENSE */,
 				2AA6F23B1920CF8D005B4AF8 /* README.md */,
@@ -146,11 +154,13 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2AD556CA1995656D001F79B2 /* ARAP.h in Headers */,
 				2AA6F2211920CA42005B4AF8 /* cageDeformer.h in Headers */,
+				2A33B3251DC9B31500999EC2 /* laplacian.h in Headers */,
 				2A24D5851D8BE912009C5678 /* deformerConst.h in Headers */,
+				2A3E02541DCAB8480041ECCC /* distance.h in Headers */,
 				2AD556A4198ED9A9001F79B2 /* affinelib.h in Headers */,
 				2AD556A6198ED9A9001F79B2 /* tetrise.h in Headers */,
+				2A33B3221DC9B30A00999EC2 /* blendAff.h in Headers */,
 				2AD556CC1995656D001F79B2 /* MeshMaya.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -159,11 +169,13 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2AD556CB1995656D001F79B2 /* ARAP.h in Headers */,
 				2AA6F2341920CE47005B4AF8 /* cageDeformerARAP.h in Headers */,
+				2A33B3261DC9B31500999EC2 /* laplacian.h in Headers */,
 				2A24D5861D8BE912009C5678 /* deformerConst.h in Headers */,
+				2A3E02551DCAB8480041ECCC /* distance.h in Headers */,
 				2AD556A5198ED9A9001F79B2 /* affinelib.h in Headers */,
 				2AD556A7198ED9A9001F79B2 /* tetrise.h in Headers */,
+				2A33B3231DC9B30A00999EC2 /* blendAff.h in Headers */,
 				2AD556CD1995656D001F79B2 /* MeshMaya.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

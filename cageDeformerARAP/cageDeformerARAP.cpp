@@ -15,11 +15,6 @@
 #include "cageDeformerARAP.h"
 
 
-// cage mode
-#define CM_MVC 20
-#define CM_MLS 30
-
-
 using namespace Eigen;
 using namespace AffineLib;
 using namespace Tetrise;
@@ -45,9 +40,11 @@ MObject CageDeformerNode::aEffectRadius;
 MObject CageDeformerNode::aConstraintRadius;
 MObject CageDeformerNode::aNormaliseWeight;
 MObject CageDeformerNode::aAreaWeighted;
+MObject CageDeformerNode::aNeighbourWeighting;
 
+
+// check if points are coplanar
 double isDegenerate(MPoint a,MPoint b,MPoint c,MPoint d){
-    /// check linear independency
     return ((b-a)^(c-a)) * (d-a);
 }
 
@@ -61,7 +58,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     // load attributes
     MObject oCageMesh = data.inputValue( aCageMesh ).asMesh();
     short blendMode = data.inputValue(aBlendMode).asShort();
-	bool rotationCosistency = data.inputValue( aRotationConsistency ).asBool();
+	B.rotationConsistency = data.inputValue( aRotationConsistency ).asBool();
 	bool frechetSum = data.inputValue( aFrechetSum ).asBool();
     short tetMode = data.inputValue(aTetMode).asShort();
     short constraintMode = data.inputValue(aConstraintMode).asShort();
@@ -95,13 +92,10 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         initCagePts = cagePts;
         arap_flag = true;
     }
-    int numCageTet = (int) cageTetList.size()/4;
     // load mesh points
     MPointArray Mpts;
     itGeo.allPositions(Mpts);
     int numPts=Mpts.length();
-    int numTet=(int)tetList.size()/4;
-
 
     // when cage mode is changed
     if(!data.isClean(aARAP) || arap_flag){
@@ -111,20 +105,17 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             Mpts[j] *= localToWorldMatrix;
             pts[j] << Mpts[j].x, Mpts[j].y, Mpts[j].z;
         }
-        std::vector<Matrix4d> P;
-        getMeshData(data, input, inputGeom, mIndex, tetMode, pts, tetList, faceList, edgeList, vertexList, P, tetWeight);
-        dim = removeDegenerate(tetMode, numPts, tetList, faceList, edgeList, vertexList, P);
-        makeTetMatrix(tetMode, pts, tetList, faceList, edgeList, vertexList, P, tetWeight);
-        //makeTetCenterList(tetMode, pts, tetList, tetCenter);
-        numTet = (int)tetList.size()/4;
-        PI.resize(numTet);
-        for(int i=0;i<numTet;i++){
-            PI[i] = P[i].inverse().eval();
-        }
+        // make tetrahedral structure
+        getMeshData(data, input, inputGeom, mIndex, tetMode, pts, mesh.tetList, faceList, edgeList, vertexList, mesh.tetMatrix, mesh.tetWeight);
+        mesh.dim = removeDegenerate(tetMode, numPts, mesh.tetList, faceList, edgeList, vertexList, mesh.tetMatrix);
+        makeTetMatrix(tetMode, pts, mesh.tetList, faceList, edgeList, vertexList, mesh.tetMatrix, mesh.tetWeight);
+        makeTetCenterList(tetMode, pts, mesh.tetList, D.tetCenter);
+        mesh.numTet = (int)mesh.tetList.size()/4;
+        mesh.computeTetMatrixInverse();
         
         // prepare cage tetrahedra
         std::vector<int> cageFaceCount(0);
-        if (cageMode != CM_MLS){
+        if (cageMode != CM_MLS_AFF && cageMode != CM_MLS_SIM && cageMode != CM_MLS_RIGID){
             // face list
             makeFaceList( initCageMesh, cageFaceList, cageFaceCount, symmetricFace);
             std::vector<Matrix4d> initCageMatrix;
@@ -134,7 +125,6 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             makeTetList(cageMode, numCagePts, cageFaceList, cageEdgeList, cageVertexList, cageTetList);
             makeTetMatrix(cageMode, initCagePts, cageTetList, cageFaceList, cageEdgeList,
                               cageVertexList, initCageMatrix, cageTetWeight, normaliseTet);
-            makeTetCenterList(cageMode, initCagePts, cageTetList, cageTetCenter);
             numCageTet = (int) cageTetList.size()/4;
             cageMatrixI.resize(numCageTet);
             for(int i=0;i<numCageTet;i++){
@@ -145,11 +135,15 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         }
         
         if(!areaWeighted){
-            cageTetWeight.clear();
-            cageTetWeight.resize(numCageTet,1.0);
-            tetWeight.clear();
-            tetWeight.resize(numTet,1.0);
+            mesh.tetWeight.clear();
+            mesh.tetWeight.resize(mesh.numTet,1.0);
         }
+        
+        
+        D.setNum(numCageTet, numPts, mesh.numTet);
+        D.computeCageDistPts(cageMode, pts, initCagePts, cageTetList);
+        D.findClosestPts();
+        
         // set effect weight for cage tet
         if(cageMode == TM_FACE){
             for(int i=0;i<numCageTet;i++){
@@ -169,140 +163,117 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
                     cur++;
                 }
             }
+        }else{
+            cageTetWeight.clear();
+            cageTetWeight.resize(numCageTet,1.0);
         }
     
-    
-        // pt to cage distance computation
-        std::vector< std::vector<double> > dist(numPts);
-        for(int j=0;j<numPts;j++){
-            dist[j].resize(numCageTet);
-        }
-        if(cageMode == TM_FACE){
-            for(int j=0;j<numPts;j++){
-                for(int i=0;i<numCageTet;i++){
-                    Vector3d a=initCagePts[cageTetList[4*i]];
-                    Vector3d b=initCagePts[cageTetList[4*i+1]];
-                    Vector3d c=initCagePts[cageTetList[4*i+2]];
-                    dist[j][i] = sqrt(distPtTri(pts[j], a,b,c));
-                }
-            }
-        }else if(cageMode == TM_EDGE){
-            for(int j=0;j<numPts;j++){
-                for(int i=0;i<numCageTet;i++){
-                    Vector3d a=initCagePts[cageTetList[4*i]];
-                    Vector3d b=initCagePts[cageTetList[4*i+1]];
-                    dist[j][i] = sqrt(distPtLin(pts[j], a,b));
-                }
-            }
-        }else if(cageMode == TM_VERTEX || cageMode == TM_VFACE){
-            for(int j=0;j<numPts;j++){
-                for(int i=0;i<numCageTet;i++){
-                    dist[j][i] = (pts[j]-cageTetCenter[i]).norm();
-                }
-            }
-        }else if(cageMode == CM_MLS){
-            for(int j=0;j<numPts;j++){
-                for(int i=0;i<numCageTet;i++){
-                    dist[j][i] = (pts[j]-initCagePts[i]).norm();
-                }
-            }
-        }
-        // find closest point on mesh from each transformation
-        std::vector<int> closest(numCageTet);
-        for(int i=0;i<numCageTet;i++){
-            closest[i] = 0;
-            double min_d = HUGE_VAL;
-            for(int j=0;j<numPts;j++){
-                if( dist[j][i] < min_d){
-                    min_d = dist[j][i];
-                    closest[i] = j;
-                }
-            }
-        }
-        
-        
+
         // find constraint points
         constraint.resize(numCageTet);
+        std::vector<double> strength(numCageTet);
+        for(int i=0;i<numCageTet;i++){
+            strength[i] = constraintWeight*cageTetWeight[i];
+            constraint[i] = T(i,D.closestPts[i],strength[i]);
+        }
         if( constraintMode == CONSTRAINT_NEIGHBOUR ){
             for(int i=0;i<numCageTet;i++){
-                constraint[i].clear();
                 for(int j=0;j<numPts;j++){
-                    if(dist[j][i]<constraintRadius){
-                        constraint[i][j] = constraintWeight * cageTetWeight[i] *
-                        pow((constraintRadius-dist[j][i])/constraintRadius,normExponent);
+                    if(D.distPts[i][j]<constraintRadius){
+                        constraint.push_back(T(i,j,strength[i] * pow((constraintRadius-D.distPts[i][j])/constraintRadius,normExponent)));
                     }
                 }
             }
-        }else if( constraintMode == CONSTRAINT_CLOSEST){
-            for(int i=0;i<numCageTet;i++){
-                constraint[i].clear();
-                constraint[i][closest[i]] = constraintWeight*cageTetWeight[i];
-            }
+        }
+        int numConstraint=constraint.size();
+        mesh.constraintWeight.resize(numConstraint);
+        mesh.constraintVal.resize(numConstraint,numCageTet);
+        for(int cur=0;cur<numConstraint;cur++){
+            mesh.constraintWeight[cur] = std::make_pair(constraint[cur].col(), constraint[cur].value());
         }
         
         // weight computation
-        w.resize(numTet);
+        w.resize(mesh.numTet);
         if(weightMode == WM_INV_DISTANCE){
-            for(int j=0;j<numTet;j++){
+            for(int j=0;j<mesh.numTet;j++){
                 w[j].resize(numCageTet);
                 for( int i=0; i<numCageTet; i++){
-                    w[j][i] = cageTetWeight[i]/pow(dist[tetList[4*j]][i],normExponent);
+                    w[j][i] = cageTetWeight[i]/pow(D.distPts[i][mesh.tetList[4*j]],normExponent);
                 }
             }
         }else if(weightMode == WM_CUTOFF_DISTANCE){
             double delta; // avoid under determined system for MLS
-            delta = (cageMode == CM_MLS) ? EPSILON : 0;
-            for(int j=0;j<numTet;j++){
+            delta = (cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID) ? EPSILON : 0;
+            for(int j=0;j<mesh.numTet;j++){
                 w[j].resize(numCageTet);
                 for( int i=0; i<numCageTet; i++){
-                    w[j][i] = (dist[tetList[4*j]][i] > effectRadius)
-                    ? delta : cageTetWeight[i]*pow((effectRadius-dist[tetList[4*j]][i])/effectRadius,normExponent);
+                    w[j][i] = (D.distPts[i][mesh.tetList[4*j]] > effectRadius)
+                    ? delta : cageTetWeight[i]*pow((effectRadius-D.distPts[i][mesh.tetList[4*j]])/effectRadius,normExponent);
                 }
             }
-        }else if(weightMode == WM_HARMONIC || weightMode == WM_HARMONIC_NEIGHBOUR){
-            std::vector<int> fList,tList;
-            std::vector<double> fWeight;
-            std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
-            std::vector<Matrix4d> P;
-            int d=makeFaceTet(data, input, inputGeom, mIndex, pts, fList, tList, P, fWeight);
-            std::vector< std::map<int,double> > weightConstraint(numCageTet);
-            std::vector<double> weightConstraintValue(0);
+        }else if(weightMode == WM_HARMONIC || weightMode == WM_HARMONIC_COTAN){
+            Laplacian harmonicWeighting;
+            makeFaceTet(data, input, inputGeom, mIndex, pts, harmonicWeighting.tetList, harmonicWeighting.tetMatrix, harmonicWeighting.tetWeight);
+            harmonicWeighting.numTet = (int)harmonicWeighting.tetList.size()/4;
+            std::vector<T> weightConstraint(numCageTet);
+            // the vertex closest to the probe is given probeWeight
             for(int i=0;i<numCageTet;i++){
-                weightConstraint[i].clear();
+                weightConstraint[i]=T(i,D.closestPts[i],cageTetWeight[i]);
             }
-            if( weightMode == WM_HARMONIC_NEIGHBOUR ){
+            // vertices within effectRadius are given probeWeight
+            if( data.inputValue( aNeighbourWeighting ).asBool() ){
                 for(int i=0;i<numCageTet;i++){
                     for(int j=0;j<numPts;j++){
-                        if(dist[i][j]<effectRadius){
-                            weightConstraint[i][j] = 1;
-                            weightConstraintValue.push_back(cageTetWeight[i]);
+                        if(D.distPts[i][j]<effectRadius){
+                            weightConstraint.push_back(T(i,j,cageTetWeight[i]));
                         }
                     }
                 }
-            }else if( weightMode == WM_HARMONIC){
-                for(int i=0;i<numCageTet;i++){
-                    weightConstraint[i][closest[i]] = 1;
-                    weightConstraintValue.push_back(cageTetWeight[i]);
+            }
+            // set boundary condition for weight computation
+            int numConstraint=weightConstraint.size();
+            harmonicWeighting.constraintWeight.resize(numConstraint);
+            harmonicWeighting.constraintVal.resize(numConstraint,numCageTet);
+            harmonicWeighting.constraintVal.setZero();
+            for(int i=0;i<numConstraint;i++){
+                harmonicWeighting.constraintVal(i,weightConstraint[i].row())=weightConstraint[i].value();
+                harmonicWeighting.constraintWeight[i] = std::make_pair(weightConstraint[i].col(), weightConstraint[i].value());
+            }
+            // clear tetWeight
+            if(!areaWeighted){
+                harmonicWeighting.tetWeight.clear();
+                harmonicWeighting.tetWeight.resize(harmonicWeighting.numTet,1.0);
+            }
+            // solve the laplace equation
+            if( weightMode == WM_HARMONIC ){
+                harmonicWeighting.computeTetMatrixInverse();
+                harmonicWeighting.dim = numPts + harmonicWeighting.numTet;
+                isError = harmonicWeighting.ARAPprecompute();
+            }else if(weightMode == WM_HARMONIC_COTAN){
+                harmonicWeighting.dim = numPts;
+                isError = harmonicWeighting.cotanPrecompute();
+            }
+            if(isError>0) return MS::kFailure;
+            std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
+            harmonicWeighting.harmonicSolve();
+            for(int i=0;i<numCageTet;i++){
+                ptsWeight[i].resize(numPts);
+                for(int j=0;j<numPts;j++){
+                    ptsWeight[i][j] = harmonicWeighting.Sol.coeff(j,i);
                 }
             }
-            if(!areaWeighted){
-                fWeight.clear();
-                fWeight.resize(P.size(),1.0);
-            }
-            int isError = harmonicWeight(numPts, P, tList, fWeight, weightConstraint, weightConstraintValue, ptsWeight);
-            if(isError>0) return MS::kFailure;
             for(int i=0;i<numCageTet;i++){
-                makeTetWeightList(tetMode, tetList, faceList, edgeList, vertexList, ptsWeight[i], w_tet[i]);
-                for(int j=0;j<numTet;j++){
+                makeTetWeightList(tetMode, mesh.tetList, faceList, edgeList, vertexList, ptsWeight[i], w_tet[i]);
+                for(int j=0;j<mesh.numTet;j++){
                     w[j][i] = w_tet[i][j];
                 }
             }
         }
         // normalise weights
         bool normaliseWeight = data.inputValue( aNormaliseWeight ).asBool();
-        for(int j=0;j<numTet;j++){
+        for(int j=0;j<mesh.numTet;j++){
             double sum = std::accumulate(w[j].begin(), w[j].end(), 0.0);
-            if (sum > 1 || normaliseWeight || cageMode == CM_MLS){
+            if ((sum > 1 || normaliseWeight || cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID) && sum>0){
                 for (int i = 0; i < numCageTet; i++){
                     w[j][i] /= sum;
                 }
@@ -310,7 +281,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         }
         
         // prepare ARAP solver
-        isError = ARAPprecompute(PI, tetList, tetWeight, constraint, transWeight, dim, constraintMat, solver);
+        mesh.ARAPprecompute();
         status = data.setClean(aARAP);
     }
 //////  END of precomputation ///////
@@ -319,25 +290,13 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     }
     
 
-    
-    
-    // compute transformation
-    if( ! rotationCosistency || numCageTet != logR.size() || numCageTet != logSE.size()){
-        logSE.clear();
-        logSE.resize(numCageTet, Matrix4d::Zero().eval());
-        logR.clear();
-        logR.resize(numCageTet, Matrix3d::Zero().eval());
-    }
+    B.setNum(numCageTet);
     //  find affine transformations for tetrahedra
-    cageMatrix.resize(numCageTet); SE.resize(numCageTet);
-    logAff.resize(numCageTet); Aff.resize(numCageTet);
-    R.resize(numCageTet); logS.resize(numCageTet); S.resize(numCageTet); logGL.resize(numCageTet);
-    L.resize(numCageTet); quat.resize(numCageTet); A.resize(numTet); blendedSE.resize(numTet);
-    blendedR.resize(numTet); blendedS.resize(numTet); blendedL.resize(numTet);
+    cageMatrix.resize(numCageTet); A.resize(mesh.numTet); blendedSE.resize(mesh.numTet);
+    blendedR.resize(mesh.numTet); blendedS.resize(mesh.numTet); blendedL.resize(mesh.numTet);
     
-    
-    if(cageMode == CM_MLS){
-        for(int j = 0; j < numTet; j++){
+    if(cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID){
+        for(int j = 0; j < mesh.numTet; j++){
             // barycentre of the original and the current cage points
             Vector3d icenter = Vector3d::Zero();
             Vector3d center = Vector3d::Zero();
@@ -345,147 +304,113 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
                 icenter += w[j][i] * initCagePts[i];
                 center += w[j][i] * cagePts[i];
             }
-            // determine the closest affine matrix
-            std::vector<Vector3d> p(numCagePts), q(numCagePts);   // relative coordinates of the cage
-            Matrix3d M,PP,QQ;
-            PP = Matrix3d::Zero();
-            QQ = Matrix3d::Zero();
+            // determine the closest transformation
+            MatrixXd p(3,numCagePts), q(3,numCagePts);   // relative coordinates of the cage
+            Matrix3d M;
             for(int i=0;i<numCagePts;i++){
-                p[i] = initCagePts[i]-icenter;
-                q[i] = cagePts[i]-center;
-                PP += w[j][i] * (p[i] * p[i].transpose());
-                QQ += w[j][i] * p[i] * q[i].transpose();
+                p.col(i) = sqrt(w[j][i]) * (initCagePts[i]-icenter);
+                q.col(i) = sqrt(w[j][i]) * (cagePts[i]-center);
             }
-            M = PP.inverse() * QQ;
-//            polarHigham(M, S[j], R[j]);
-            A[j] = pad(M,center-icenter);
+            if(cageMode == CM_MLS_AFF){
+                M = (q*p.transpose()) * (p*p.transpose()).inverse();
+            }else if(cageMode == CM_MLS_SIM){
+                M = umeyama(p,q).block(0,0,3,3);
+            }else if(cageMode == CM_MLS_RIGID){
+                M = umeyama(p,q,false).block(0,0,3,3);
+            }
+            A[j] = pad(M.transpose(), center-icenter);
         }
         for(int i=0; i<numCageTet; i++){
-            Aff[i]=pad(Matrix3d::Identity().eval(),cagePts[i]-initCagePts[i]);
+            B.Aff[i]=pad(Matrix3d::Identity().eval(),cagePts[i]-initCagePts[i]);
         }
     }else{
-        std::vector<double> dummy_weight;
         makeTetMatrix(cageMode, cagePts, cageTetList, cageFaceList, cageEdgeList,
                       cageVertexList, cageMatrix, dummy_weight, normaliseTet);
-        for(int i=0; i<numCageTet; i++)
-            Aff[i]=cageMatrixI[i]*cageMatrix[i];
-        
-        // compute parametrisation
-        if(blendMode == BM_SRL || blendMode == BM_SSE || blendMode == BM_SQL){
-            for(int i=0;i<numCageTet;i++){
-                parametriseGL(Aff[i].block(0,0,3,3), logS[i] ,R[i]);
-                L[i] = transPart(Aff[i]);
-                if(blendMode == BM_SRL){
-                    logR[i]=logSOc(R[i], logR[i]);
-                }else if(blendMode == BM_SSE){
-                    SE[i]=pad(R[i], L[i]);
-                    logSE[i]=logSEc(SE[i], logSE[i]);
-                }else if(blendMode == BM_SQL){
-                    Quaternion<double> Q(R[i].transpose());
-                    quat[i] << Q.x(), Q.y(), Q.z(), Q.w();
-                    S[i]=expSym(logS[i]);
-                }
-            }
-        }else if(blendMode == BM_LOG3){
-            for(int i=0;i<numCageTet;i++){
-                logGL[i] = Aff[i].block(0,0,3,3).log();
-                L[i] = transPart(Aff[i]);
-            }
-        }else if(blendMode == BM_LOG4){
-            for(int i=0;i<numCageTet;i++){
-                logAff[i] = Aff[i].log();
-            }
+        for(int i=0; i<numCageTet; i++){
+            B.Aff[i]=cageMatrixI[i]*cageMatrix[i];
         }
+        B.parametrise(blendMode);
         
         // compute blended matrices
-        // prepare transform matrix for each simplex
 #pragma omp parallel for
-        for (int j = 0; j < numTet; j++){
+        for (int j = 0; j < mesh.numTet; j++){
             // blend matrix
             if (blendMode == BM_SRL){
-                blendedS[j] = expSym(blendMat(logS, w[j]));
-//                blendedS[j] = frechetSum ? frechetSym(S, w[j]) : expSym(blendMat(logS, w[j]));
-                Vector3d l = blendMat(L, w[j]);
-                blendedR[j] = frechetSum ? frechetSO(R, w[j]) : expSO(blendMat(logR, w[j]));
+                blendedS[j] = expSym(blendMat(B.logS, w[j]));
+                Vector3d l = blendMat(B.L, w[j]);
+                blendedR[j] = frechetSum ? frechetSO(B.R, w[j]) : expSO(blendMat(B.logR, w[j]));
                 A[j] = pad(blendedS[j]*blendedR[j], l);
             }
             else if (blendMode == BM_SSE){
-                blendedS[j] = expSym(blendMat(logS, w[j]));
-                blendedSE[j] = expSE(blendMat(logSE, w[j]));
+                blendedS[j] = expSym(blendMat(B.logS, w[j]));
+                blendedSE[j] = expSE(blendMat(B.logSE, w[j]));
                 A[j] = pad(blendedS[j], Vector3d::Zero()) * blendedSE[j];
             }
             else if (blendMode == BM_LOG3){
-                blendedR[j] = blendMat(logGL, w[j]).exp();
-                Vector3d l = blendMat(L, w[j]);
+                blendedR[j] = blendMat(B.logGL, w[j]).exp();
+                Vector3d l = blendMat(B.L, w[j]);
                 A[j] = pad(blendedR[j], l);
             }
             else if (blendMode == BM_LOG4){
-                A[j] = blendMat(logAff, w[j]).exp();
+                A[j] = blendMat(B.logAff, w[j]).exp();
             }
             else if (blendMode == BM_SQL){
-                Vector4d q = blendQuat(quat, w[j]);
-                Vector3d l = blendMat(L, w[j]);
-                blendedS[j] = blendMatLin(S, w[j]);
+                Vector4d q = blendQuat(B.quat, w[j]);
+                Vector3d l = blendMat(B.L, w[j]);
+                blendedS[j] = blendMatLin(B.S, w[j]);
                 Quaternion<double> Q(q);
                 blendedR[j] = Q.matrix().transpose();
                 A[j] = pad(blendedS[j]*blendedR[j], l);
             }
             else if (blendMode == BM_AFF){
-                A[j] = blendMatLin(Aff, w[j]);
+                A[j] = blendMatLin(B.Aff, w[j]);
             }
         }
     }
     
-    // compute target vertices position
-    MatrixXd Sol;
-    
     // set constraint
-    std::vector<Vector3d> constraintVector(0);
-    constraintVector.reserve(numCageTet * numPts);
+    int numConstraints = constraint.size();
+    mesh.constraintVal.resize(numConstraints,3);
     RowVector4d cv;
-    Vector3d cvv;
-    for(int i=0;i<constraint.size();i++){
-        std::map<int, double>::iterator iter;
-        for(iter = constraint[i].begin(); iter != constraint[i].end(); iter++){
-            cv = pad(pts[iter->first]) * Aff[i];
-            cvv << cv[0], cv[1], cv[2];
-            constraintVector.push_back(cvv);
-        }
+    for(int cur=0;cur<numConstraints;cur++){
+        cv = pad(pts[constraint[cur].col()]) * B.Aff[constraint[cur].row()];
+        mesh.constraintVal(cur,0) = cv[0];
+        mesh.constraintVal(cur,1) = cv[1];
+        mesh.constraintVal(cur,2) = cv[2];
     }
     
     // iterate to determine vertices position
     for(int k=0;k<numIter;k++){
         // solve ARAP
-        ARAPSolve(A, PI, tetList, tetWeight, constraintVector, transWeight, dim, constraintMat, solver, Sol);
+        mesh.ARAPSolve(A);
         // set new vertices position
         new_pts.resize(numPts);
         for(int i=0;i<numPts;i++){
-            new_pts[i][0]=Sol(i,0);
-            new_pts[i][1]=Sol(i,1);
-            new_pts[i][2]=Sol(i,2);
+            new_pts[i][0]=mesh.Sol(i,0);
+            new_pts[i][1]=mesh.Sol(i,1);
+            new_pts[i][2]=mesh.Sol(i,2);
         }
         // if iteration continues
         if(k+1<numIter){
-            std::vector<double> dummy_weight;
-            makeTetMatrix(tetMode, new_pts, tetList, faceList, edgeList, vertexList, Q, dummy_weight);
+            makeTetMatrix(tetMode, new_pts, mesh.tetList, faceList, edgeList, vertexList, Q, dummy_weight);
             Matrix3d S,R,newS,newR;
-            if(blendMode == BM_AFF || blendMode == BM_LOG4 || blendMode == BM_LOG3 || cageMode == CM_MLS){
-                for(int i=0;i<numTet;i++){
+            if(blendMode == BM_AFF || blendMode == BM_LOG4 || blendMode == BM_LOG3 || cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID){
+                for(int i=0;i<mesh.numTet;i++){
                     polarHigham(A[i].block(0,0,3,3), blendedS[i], blendedR[i]);
                 }
             }
 #pragma omp parallel for
-            for(int i=0;i<numTet;i++){
-                polarHigham((PI[i]*Q[i]).block(0,0,3,3), newS, newR);
+            for(int i=0;i<mesh.numTet;i++){
+                polarHigham((mesh.tetMatrixInverse[i]*Q[i]).block(0,0,3,3), newS, newR);
 //                tetEnergy[i] = (newS-blendedS[i]).squaredNorm();
                 A[i].block(0,0,3,3) = blendedS[i]*newR;
             }
         }
     }
     for(int i=0;i<numPts;i++){
-        Mpts[i].x=Sol(i,0);
-        Mpts[i].y=Sol(i,1);
-        Mpts[i].z=Sol(i,2);
+        Mpts[i].x=mesh.Sol(i,0);
+        Mpts[i].y=mesh.Sol(i,1);
+        Mpts[i].z=mesh.Sol(i,2);
         Mpts[i] *= localToWorldMatrix.inverse();
     }
     itGeo.setAllPositions(Mpts);
@@ -512,19 +437,21 @@ MStatus CageDeformerNode::initialize()
     addAttribute( aCageMesh );
     attributeAffects( aCageMesh, outputGeom );
     
-    aCageMode = eAttr.create( "cageMode", "cgm", TM_FACE );
+    aCageMode = eAttr.create( "cageMode", "cgm", TM_VERTEX );
     eAttr.addField( "face", TM_FACE );
     eAttr.addField( "edge", TM_EDGE );
     eAttr.addField( "vertex", TM_VERTEX );
     eAttr.addField( "vface", TM_VFACE );
 //    eAttr.addField( "MVC", CM_MVC );
-    eAttr.addField( "MLS", CM_MLS );
+    eAttr.addField( "MLS-AFF", CM_MLS_AFF );
+    eAttr.addField( "MLS-SIM", CM_MLS_SIM );
+    eAttr.addField( "MLS-RIGID", CM_MLS_RIGID );
     addAttribute( aCageMode );
     attributeAffects( aCageMode, outputGeom );
     attributeAffects( aCageMode, aARAP);
     
     
-    aConstraintMode = eAttr.create( "constraintMode", "ctm", CONSTRAINT_NEIGHBOUR );
+    aConstraintMode = eAttr.create( "constraintMode", "ctm", CONSTRAINT_CLOSEST );
     eAttr.addField( "neighbour",  CONSTRAINT_NEIGHBOUR);
     eAttr.addField( "closestPt", CONSTRAINT_CLOSEST );
     eAttr.setStorable(true);
@@ -532,7 +459,7 @@ MStatus CageDeformerNode::initialize()
     attributeAffects( aConstraintMode, outputGeom );
     attributeAffects( aConstraintMode, aARAP);
     
-    aConstraintWeight = nAttr.create("constraintWeight", "cw", MFnNumericData::kDouble, 0.001);
+    aConstraintWeight = nAttr.create("constraintWeight", "cw", MFnNumericData::kDouble, 1e-10);
     nAttr.setStorable(true);
 	addAttribute( aConstraintWeight );
 	attributeAffects( aConstraintWeight, outputGeom );
@@ -571,8 +498,8 @@ MStatus CageDeformerNode::initialize()
     aWeightMode = eAttr.create( "weightMode", "wtm", WM_INV_DISTANCE );
     eAttr.addField( "inverse", WM_INV_DISTANCE );
     eAttr.addField( "cut-off", WM_CUTOFF_DISTANCE );
-    eAttr.addField( "harmonic-closest", WM_HARMONIC);
-    eAttr.addField( "harmonic-neighbour", WM_HARMONIC_NEIGHBOUR);
+//    eAttr.addField( "harmonic-arap", WM_HARMONIC);
+    eAttr.addField( "harmonic-cotan", WM_HARMONIC_COTAN);
     eAttr.setStorable(true);
     addAttribute( aWeightMode );
     attributeAffects( aWeightMode, outputGeom );
@@ -634,6 +561,12 @@ MStatus CageDeformerNode::initialize()
     attributeAffects( aEffectRadius, outputGeom );
     attributeAffects( aEffectRadius, aARAP );
 
+    aNeighbourWeighting = nAttr.create( "neighbourWeighting", "nghbrw", MFnNumericData::kBoolean, false );
+    nAttr.setStorable(true);
+    addAttribute( aNeighbourWeighting );
+    attributeAffects( aNeighbourWeighting, outputGeom );
+    attributeAffects( aNeighbourWeighting, aARAP );
+    
     return MS::kSuccess;
 }
 

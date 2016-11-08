@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "CageDeformerNode::deform(MDataBlock&amp;, MItGeometry&amp;, MMatrix const&amp;, unsigned int):cageDeformerARAP.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "w">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

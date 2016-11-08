@@ -6,11 +6,14 @@
 
 #include <numeric>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/Geometry>
 
 #include "affinelib.h"
 #include "tetrise.h"
 #include "MeshMaya.h"
-#include "ARAP.h"
+#include "laplacian.h"
+#include "blendAff.h"
+#include "distance.h"
 #include "deformerConst.h"
 
 using namespace Eigen;
@@ -37,15 +40,17 @@ public:
     static MObject      aReconstructCage;
     static MObject      aNormaliseWeight;
     static MObject      aAreaWeighted;
+    static MObject      aNeighbourWeighting;
     
 private:
 	void MVC(const std::vector<Vector3d>& pts, const std::vector<Vector3d>& cagePoints,
              const std::vector<int>& cageFaceList, std::vector< std::vector<double> >& w);
     MObject     initCageMesh;
+    BlendAff    B;
+    Distance    D;
+    int         numCageTet;
     std::vector<Matrix4d> cageMatrixI;   // inverses of initial cage matrix
     std::vector< std::vector<double> > w;   // weight for the target mesh points
-    std::vector<Matrix4d> logSE;   // for rotation consistency
-    std::vector<Matrix3d> logR;   // for rotation consistency
     std::vector<int> cageFaceList;
     std::vector<Vector3d> cageTetCenter;
     std::vector< int > cageTetList;
@@ -53,10 +58,6 @@ private:
     std::vector<vertex> cageVertexList;
     std::vector<Vector3d> initCagePts;
     std::vector<double> cageTetWeight;
-    //  find affine transformations for tetrahedra
-    std::vector<Matrix4d> cageMatrix, SE, logAff,Aff;
-    std::vector<Matrix3d> R,logS,S,logGL;
-    std::vector<Vector3d> L;
-    std::vector<Vector4d> quat;
+    std::vector<Matrix4d> cageMatrix;
 };
 

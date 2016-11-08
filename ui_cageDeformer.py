@@ -61,7 +61,7 @@ class UI_CageDeformer:
                     self.createCommonAttr(node)
                     with pm.rowLayout(numberOfColumns=3) :
                         pm.attrControlGrp( label="constraint mode", attribute= node.ctm)
-                        pm.attrFieldSliderGrp( label="constraint weight", min=0.001, max=1000, attribute=node.cw)
+                        pm.attrFieldSliderGrp( label="constraint weight", min=1e-10, max=1000, attribute=node.cw)
                         pm.attrFieldSliderGrp(label="constraint radius", min=0.001, max=10.0, attribute=node.cr)
                     with pm.rowLayout(numberOfColumns=3) :
                         pm.attrFieldSliderGrp( label="iteration", min=1, max=20, attribute=node.it)

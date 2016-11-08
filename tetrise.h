@@ -498,43 +498,4 @@ namespace Tetrise{
             }
         }
     }
-    
-    
-    /// compute distance between a line segment (ab) and a point p
-    double distPtLin(Vector3d p,Vector3d a,Vector3d b){
-        double t= (a-b).dot(p-b)/(a-b).squaredNorm();
-        if(t>1){
-            return (a-p).norm();
-        }else if(t<0){
-            return (b-p).norm();
-        }else{
-            return (t*(a-b)-(p-b)).norm();
-        }
-    }
-    
-    /// compute distance between a triangle (abc) and a point p
-    double distPtTri(Vector3d p, Vector3d a, Vector3d b, Vector3d c){
-        /// if p is in the outer half-space, it returns HUGE_VAL
-        double s[4];
-        Vector3d n=(b-a).cross(c-a);
-        if(n.squaredNorm()<EPSILON){
-            return (p-a).norm();
-        }
-        double k=n.dot(a-p);
-        if(k<0) return HUGE_VAL;
-        s[0]=distPtLin(p,a,b);
-        s[1]=distPtLin(p,b,c);
-        s[2]=distPtLin(p,c,a);
-        Matrix3d A;
-        A << b(0)-a(0), c(0)-a(0), n(0)-a(0),
-        b(1)-a(1), c(1)-a(1), n(1)-a(1),
-        b(2)-a(2), c(2)-a(2), n(2)-a(2);
-        Vector3d v = A.inverse()*(p-a);  // barycentric coordinate of p
-        if(v(0)>0 && v(1)>0 && v(0)+v(1)<1){
-            s[3]=k;
-        }else{
-            s[3] = HUGE_VAL;
-        }
-        return min(min(min(s[0],s[1]),s[2]),s[3]);
-    }
 }

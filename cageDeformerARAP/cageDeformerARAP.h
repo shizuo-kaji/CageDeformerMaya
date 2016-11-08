@@ -25,7 +25,9 @@
 #include "tetrise.h"
 #include "deformerConst.h"
 #include "MeshMaya.h"
-#include "ARAP.h"
+#include "laplacian.h"
+#include "blendAff.h"
+#include "distance.h"
 
 typedef Eigen::SparseMatrix<double> SpMat;
 typedef Eigen::Triplet<double> T;
@@ -60,47 +62,38 @@ public:
     static MObject      aIteration;
     static MObject      aNormaliseWeight;
     static MObject      aAreaWeighted;
+    static MObject      aNeighbourWeighting;
     
 private:
-	void tetMatrixC(const MPointArray& p, const MIntArray& triangles, std::vector<Matrix4d>& m);
-	void arapHI(const std::vector<Matrix4d>& PI, const std::vector<int>& tetList);
-	void arapG(const std::vector< Matrix4d>& At, const std::vector<Matrix4d>& PI,
-               const std::vector<int>& tetList, const std::vector< Matrix4d>& aff, MatrixXd& G);
     MObject     initCageMesh;
-	int dim;
+    BlendAff    B;
+    Laplacian mesh;
+    Distance D;
+    int numCageTet;
     short isError;
-    std::vector<Matrix4d> logSE;   // for rotation consistency
-    std::vector<Matrix3d> logR;   // for rotation consistency
     std::vector< std::vector<double> > w;   // weight
     // cage
     std::vector<Matrix4d> cageMatrixI;   // inverses of initial cage matrix
     std::vector<int> cageFaceList;
-    std::vector<Vector3d> cageTetCenter;
     std::vector< int > cageTetList;
     std::vector< edge > cageEdgeList;
     std::vector<vertex> cageVertexList;
     std::vector<Vector3d> initCagePts;
-    // ARAP
-	std::vector<Matrix4d> PI;      // inverse of tet matrix
-    std::vector< int > tetList;
+    std::vector<double> cageTetWeight;
+    // mesh
     std::vector< edge > edgeList;
     std::vector<vertex> vertexList;
     std::vector<int> faceList;
     std::vector<Vector3d> pts;
-    std::vector<double> tetWeight;
-    std::vector<double> cageTetWeight;
-    std::vector< std::map<int,double> > constraint;
-    SpSolver solver;   // ARAP solver
-    SpMat constraintMat;                // ARAP constraint matrix
+    std::vector<T> constraint;
     //  find affine transformations for tetrahedra
-    std::vector<Matrix4d> cageMatrix, SE, logAff,Aff;
-    std::vector<Matrix3d> R,logS,S,logGL;
-    std::vector<Vector3d> L;
-    std::vector<Vector4d> quat;
+    std::vector<Matrix4d> cageMatrix;
     std::vector<Matrix4d> A,blendedSE;
     std::vector<Matrix3d> blendedR, blendedS;
     std::vector<Vector4d> blendedL;
     std::vector<Vector3d> new_pts;
     std::vector<Matrix4d> Q;  // temporary
+    std::vector<double> dummy_weight;
+
 };
 
