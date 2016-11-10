@@ -41,10 +41,9 @@ public:
     static MObject      aNormaliseWeight;
     static MObject      aAreaWeighted;
     static MObject      aNeighbourWeighting;
+    static MObject      aPositiveWeight;
     
 private:
-	void MVC(const std::vector<Vector3d>& pts, const std::vector<Vector3d>& cagePoints,
-             const std::vector<int>& cageFaceList, std::vector< std::vector<double> >& w);
     MObject     initCageMesh;
     BlendAff    B;
     Distance    D;

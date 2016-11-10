@@ -41,6 +41,7 @@ MObject CageDeformerNode::aConstraintRadius;
 MObject CageDeformerNode::aNormaliseWeight;
 MObject CageDeformerNode::aAreaWeighted;
 MObject CageDeformerNode::aNeighbourWeighting;
+MObject CageDeformerNode::aPositiveWeight;
 
 
 // check if points are coplanar
@@ -65,7 +66,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     short numIter = data.inputValue( aIteration ).asShort();
     double constraintWeight = data.inputValue( aConstraintWeight ).asDouble();
     double constraintRadius = data.inputValue( aConstraintRadius ).asDouble();
-    double transWeight = data.inputValue( aTransWeight ).asDouble();
+    mesh.transWeight = data.inputValue( aTransWeight ).asDouble();
     short weightMode = data.inputValue( aWeightMode ).asShort();
     double effectRadius = data.inputValue( aEffectRadius ).asDouble();
     bool symmetricFace = data.inputValue( aSymmetricFace ).asBool();
@@ -115,7 +116,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         
         // prepare cage tetrahedra
         std::vector<int> cageFaceCount(0);
-        if (cageMode != CM_MLS_AFF && cageMode != CM_MLS_SIM && cageMode != CM_MLS_RIGID){
+        if (cageMode == TM_FACE || cageMode == TM_EDGE || cageMode == TM_VERTEX || cageMode == TM_VFACE){
             // face list
             makeFaceList( initCageMesh, cageFaceList, cageFaceCount, symmetricFace);
             std::vector<Matrix4d> initCageMatrix;
@@ -135,14 +136,15 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         }
         
         if(!areaWeighted){
-            mesh.tetWeight.clear();
-            mesh.tetWeight.resize(mesh.numTet,1.0);
+            mesh.tetWeight.assign(mesh.numTet,1.0);
         }
         
         
         D.setNum(numCageTet, numPts, mesh.numTet);
         D.computeCageDistPts(cageMode, pts, initCagePts, cageTetList);
+        D.computeCageDistTet(cageMode, initCagePts, cageTetList);
         D.findClosestPts();
+        D.findClosestTet();
         
         // set effect weight for cage tet
         if(cageMode == TM_FACE){
@@ -164,23 +166,24 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
                 }
             }
         }else{
-            cageTetWeight.clear();
-            cageTetWeight.resize(numCageTet,1.0);
+            cageTetWeight.assign(numCageTet,1.0);
         }
     
 
         // find constraint points
-        constraint.resize(numCageTet);
+        constraint.resize(3*numCageTet);
         std::vector<double> strength(numCageTet);
         for(int i=0;i<numCageTet;i++){
             strength[i] = constraintWeight*cageTetWeight[i];
-            constraint[i] = T(i,D.closestPts[i],strength[i]);
+            constraint[3*i] = T(i,mesh.tetList[4*D.closestTet[i]],strength[i]);
+            constraint[3*i+1] = T(i,mesh.tetList[4*D.closestTet[i]+1],strength[i]);
+            constraint[3*i+2] = T(i,mesh.tetList[4*D.closestTet[i]+2],strength[i]);
         }
         if( constraintMode == CONSTRAINT_NEIGHBOUR ){
             for(int i=0;i<numCageTet;i++){
-                for(int j=0;j<numPts;j++){
-                    if(D.distPts[i][j]<constraintRadius){
-                        constraint.push_back(T(i,j,strength[i] * pow((constraintRadius-D.distPts[i][j])/constraintRadius,normExponent)));
+                for(int j=0;j<mesh.numTet;j++){
+                    if(D.distTet[i][j]<constraintRadius){
+                        constraint.push_back(T(i,j,strength[i] * pow((constraintRadius-D.distTet[i][j])/constraintRadius,normExponent)));
                     }
                 }
             }
@@ -194,33 +197,34 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         
         // weight computation
         w.resize(mesh.numTet);
+        for(int j=0;j<mesh.numTet;j++){
+            w[j].resize(numCageTet);
+        }
         if(weightMode == WM_INV_DISTANCE){
             for(int j=0;j<mesh.numTet;j++){
-                w[j].resize(numCageTet);
                 for( int i=0; i<numCageTet; i++){
-                    w[j][i] = cageTetWeight[i]/pow(D.distPts[i][mesh.tetList[4*j]],normExponent);
+                    w[j][i] = cageTetWeight[i]/pow(D.distTet[i][j],normExponent);
                 }
             }
         }else if(weightMode == WM_CUTOFF_DISTANCE){
             double delta; // avoid under determined system for MLS
-            delta = (cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID) ? EPSILON : 0;
+            delta = (cageMode & CM_MLS) ? EPSILON : 0;
             for(int j=0;j<mesh.numTet;j++){
-                w[j].resize(numCageTet);
                 for( int i=0; i<numCageTet; i++){
-                    w[j][i] = (D.distPts[i][mesh.tetList[4*j]] > effectRadius)
-                    ? delta : cageTetWeight[i]*pow((effectRadius-D.distPts[i][mesh.tetList[4*j]])/effectRadius,normExponent);
+                    w[j][i] = (D.distTet[i][j] > effectRadius)
+                    ? delta : cageTetWeight[i]*pow((effectRadius-D.distTet[i][j])/effectRadius,normExponent);
                 }
             }
-        }else if(weightMode == WM_HARMONIC || weightMode == WM_HARMONIC_COTAN){
+        }else if(weightMode & WM_HARMONIC){
             Laplacian harmonicWeighting;
             makeFaceTet(data, input, inputGeom, mIndex, pts, harmonicWeighting.tetList, harmonicWeighting.tetMatrix, harmonicWeighting.tetWeight);
             harmonicWeighting.numTet = (int)harmonicWeighting.tetList.size()/4;
             std::vector<T> weightConstraint(numCageTet);
-            // the vertex closest to the probe is given probeWeight
+            // the vertex closest to the cage tet
             for(int i=0;i<numCageTet;i++){
                 weightConstraint[i]=T(i,D.closestPts[i],cageTetWeight[i]);
             }
-            // vertices within effectRadius are given probeWeight
+            // vertices within effectRadius
             if( data.inputValue( aNeighbourWeighting ).asBool() ){
                 for(int i=0;i<numCageTet;i++){
                     for(int j=0;j<numPts;j++){
@@ -241,11 +245,10 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             }
             // clear tetWeight
             if(!areaWeighted){
-                harmonicWeighting.tetWeight.clear();
-                harmonicWeighting.tetWeight.resize(harmonicWeighting.numTet,1.0);
+                harmonicWeighting.tetWeight.assign(harmonicWeighting.numTet,1.0);
             }
             // solve the laplace equation
-            if( weightMode == WM_HARMONIC ){
+            if( weightMode == WM_HARMONIC_ARAP ){
                 harmonicWeighting.computeTetMatrixInverse();
                 harmonicWeighting.dim = numPts + harmonicWeighting.numTet;
                 isError = harmonicWeighting.ARAPprecompute();
@@ -254,26 +257,27 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
                 isError = harmonicWeighting.cotanPrecompute();
             }
             if(isError>0) return MS::kFailure;
-            std::vector< std::vector<double> > ptsWeight(numCageTet), w_tet(numCageTet);
+            std::vector< std::vector<double> > w_tet(numCageTet);
             harmonicWeighting.harmonicSolve();
             for(int i=0;i<numCageTet;i++){
-                ptsWeight[i].resize(numPts);
-                for(int j=0;j<numPts;j++){
-                    ptsWeight[i][j] = harmonicWeighting.Sol.coeff(j,i);
-                }
-            }
-            for(int i=0;i<numCageTet;i++){
-                makeTetWeightList(tetMode, mesh.tetList, faceList, edgeList, vertexList, ptsWeight[i], w_tet[i]);
+                makeTetWeightList(tetMode, mesh.tetList, faceList, edgeList, vertexList, harmonicWeighting.Sol.col(i), w_tet[i]);
                 for(int j=0;j<mesh.numTet;j++){
                     w[j][i] = w_tet[i][j];
                 }
             }
         }
         // normalise weights
+        if (data.inputValue( aPositiveWeight ).asBool()){
+            for(int j=0;j<mesh.numTet;j++){
+                for (int i = 0; i < numCageTet; i++){
+                    w[j][i] = max(w[j][i], 0.0);
+                }
+            }
+        }
         bool normaliseWeight = data.inputValue( aNormaliseWeight ).asBool();
         for(int j=0;j<mesh.numTet;j++){
             double sum = std::accumulate(w[j].begin(), w[j].end(), 0.0);
-            if ((sum > 1 || normaliseWeight || cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID) && sum>0){
+            if ((sum > 1 || normaliseWeight || cageMode & CM_MLS ) && sum>0){
                 for (int i = 0; i < numCageTet; i++){
                     w[j][i] /= sum;
                 }
@@ -295,7 +299,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
     cageMatrix.resize(numCageTet); A.resize(mesh.numTet); blendedSE.resize(mesh.numTet);
     blendedR.resize(mesh.numTet); blendedS.resize(mesh.numTet); blendedL.resize(mesh.numTet);
     
-    if(cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID){
+    if(cageMode & CM_MLS){
         for(int j = 0; j < mesh.numTet; j++){
             // barycentre of the original and the current cage points
             Vector3d icenter = Vector3d::Zero();
@@ -306,19 +310,34 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             }
             // determine the closest transformation
             MatrixXd p(3,numCagePts), q(3,numCagePts);   // relative coordinates of the cage
-            Matrix3d M;
+            Matrix3d M,S;
             for(int i=0;i<numCagePts;i++){
-                p.col(i) = sqrt(w[j][i]) * (initCagePts[i]-icenter);
-                q.col(i) = sqrt(w[j][i]) * (cagePts[i]-center);
+                p.col(i) = (w[j][i]) * (initCagePts[i]-icenter);
+                q.col(i) = (w[j][i]) * (cagePts[i]-center);
             }
-            if(cageMode == CM_MLS_AFF){
-                M = (q*p.transpose()) * (p*p.transpose()).inverse();
-            }else if(cageMode == CM_MLS_SIM){
-                M = umeyama(p,q).block(0,0,3,3);
+            JacobiSVD<Matrix3d> svd(p*q.transpose(), ComputeFullU | ComputeFullV);
+            M = (p*p.transpose()).inverse() * (p*q.transpose());
+            Matrix3d sgn = Matrix3d::Identity();
+            if(M.determinant()<0){
+                sgn(2,2) = -1;
+            }
+            if(cageMode == CM_MLS_SIM){
+                M = svd.matrixU() * sgn * svd.matrixV().transpose();
+                M *= svd.singularValues().sum()/(p*p.transpose()).trace();
             }else if(cageMode == CM_MLS_RIGID){
-                M = umeyama(p,q,false).block(0,0,3,3);
+                M = svd.matrixU() * sgn * svd.matrixV().transpose();
             }
-            A[j] = pad(M.transpose(), center-icenter);
+            A[j] = pad(M, center-icenter);
+            
+//            if(cageMode == CM_MLS_AFF){
+//                M = (q*p.transpose()) * (p*p.transpose()).inverse();
+//            }else if(cageMode == CM_MLS_SIM){
+//                M = umeyama(p,q).block(0,0,3,3);
+//            }else if(cageMode == CM_MLS_RIGID){
+//                M = umeyama(p,q,false).block(0,0,3,3);
+//            }
+//            A[j] = pad(M.transpose(), center-icenter);
+
         }
         for(int i=0; i<numCageTet; i++){
             B.Aff[i]=pad(Matrix3d::Identity().eval(),cagePts[i]-initCagePts[i]);
@@ -394,7 +413,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         if(k+1<numIter){
             makeTetMatrix(tetMode, new_pts, mesh.tetList, faceList, edgeList, vertexList, Q, dummy_weight);
             Matrix3d S,R,newS,newR;
-            if(blendMode == BM_AFF || blendMode == BM_LOG4 || blendMode == BM_LOG3 || cageMode == CM_MLS_AFF || cageMode == CM_MLS_SIM || cageMode == CM_MLS_RIGID){
+            if(blendMode == BM_AFF || blendMode == BM_LOG4 || blendMode == BM_LOG3 || cageMode & CM_MLS){
                 for(int i=0;i<mesh.numTet;i++){
                     polarHigham(A[i].block(0,0,3,3), blendedS[i], blendedR[i]);
                 }
@@ -471,7 +490,7 @@ MStatus CageDeformerNode::initialize()
 	attributeAffects( aConstraintRadius, outputGeom );
     attributeAffects( aConstraintRadius, aARAP );
     
-    aTransWeight = nAttr.create("translationWeight", "tw", MFnNumericData::kDouble, 0.0001);
+    aTransWeight = nAttr.create("translationWeight", "tw", MFnNumericData::kDouble, 0);
     nAttr.setStorable(true);
 	addAttribute( aTransWeight );
 	attributeAffects( aTransWeight, outputGeom );
@@ -494,7 +513,13 @@ MStatus CageDeformerNode::initialize()
     addAttribute( aNormaliseWeight );
     attributeAffects( aNormaliseWeight, outputGeom );
     attributeAffects( aNormaliseWeight, aARAP );
-    
+
+    aPositiveWeight = nAttr.create( "positiveWeight", "posw", MFnNumericData::kBoolean, false );
+    nAttr.setStorable(true);
+    addAttribute( aPositiveWeight );
+    attributeAffects( aPositiveWeight, outputGeom );
+    attributeAffects( aPositiveWeight, aARAP );
+
     aWeightMode = eAttr.create( "weightMode", "wtm", WM_INV_DISTANCE );
     eAttr.addField( "inverse", WM_INV_DISTANCE );
     eAttr.addField( "cut-off", WM_CUTOFF_DISTANCE );

@@ -53,8 +53,7 @@ public:
     std::vector< std::pair<int,double> > constraintWeight;  //  [i,w] = i-th vertex is constrained with weight w
     MatrixXd constraintVal;       // i-th row = value of i-th constraint
     MatrixXd Sol;
-    Laplacian(): tetMatrix(0), tetMatrixInverse(0), tetWeight(0), constraintWeight(0) {
-        transWeight = EPSILON;
+    Laplacian(): tetMatrix(0), tetMatrixInverse(0), tetWeight(0), constraintWeight(0), transWeight(0) {
     };
     int ARAPprecompute();
     void ARAPSolve(const std::vector<Matrix4d>& targetMat);

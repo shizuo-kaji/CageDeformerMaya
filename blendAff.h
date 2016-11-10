@@ -59,8 +59,7 @@ void BlendAff::parametrise(int mode){
                 if(rotationConsistency){
                     logR.resize(num);
                 }else{
-                    logR.clear();
-                    logR.resize(num, Matrix3d::Zero().eval());
+                    logR.assign(num, Matrix3d::Zero().eval());
                 }
                 for(int i=0;i<num;i++){
                     logR[i]=logSOc(R[i], logR[i]);
@@ -71,8 +70,7 @@ void BlendAff::parametrise(int mode){
                 if(rotationConsistency){
                     logSE.resize(num);
                 }else{
-                    logSE.clear();
-                    logSE.resize(num, Matrix4d::Zero().eval());
+                    logSE.assign(num, Matrix4d::Zero().eval());
                 }
                 SE.resize(num);
                 for(int i=0;i<num;i++){

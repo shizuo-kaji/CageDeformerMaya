@@ -63,6 +63,7 @@ public:
     static MObject      aNormaliseWeight;
     static MObject      aAreaWeighted;
     static MObject      aNeighbourWeighting;
+    static MObject      aPositiveWeight;
     
 private:
     MObject     initCageMesh;

@@ -42,11 +42,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "cageDeformer/cageDeformer.cpp"
-            timestampString = "496646079.349377"
+            timestampString = "500363202.338248"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "113"
-            endingLineNumber = "113"
+            startingLineNumber = "112"
+            endingLineNumber = "112"
             landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
             landmarkType = "7">
          </BreakpointContent>
@@ -58,11 +58,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "cageDeformer/cageDeformer.cpp"
-            timestampString = "500280387.397955"
+            timestampString = "500363202.338248"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "170"
-            endingLineNumber = "170"
+            startingLineNumber = "168"
+            endingLineNumber = "168"
             landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
             landmarkType = "7">
          </BreakpointContent>
@@ -74,11 +74,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
-            timestampString = "500280387.397955"
+            timestampString = "500363752.992063"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "364"
-            endingLineNumber = "364"
+            startingLineNumber = "360"
+            endingLineNumber = "360"
             landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
             landmarkType = "7">
          </BreakpointContent>
@@ -90,11 +90,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
-            timestampString = "496646079.349377"
+            timestampString = "500363202.338248"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "161"
-            endingLineNumber = "161"
+            startingLineNumber = "162"
+            endingLineNumber = "162"
             landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
             landmarkType = "7">
          </BreakpointContent>
@@ -106,12 +106,92 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
-            timestampString = "500280387.397955"
+            timestampString = "500363752.992063"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "433"
-            endingLineNumber = "433"
-            landmarkName = "CageDeformerNode::initialize()"
+            startingLineNumber = "429"
+            endingLineNumber = "429"
+            landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
+            timestampString = "500363752.992063"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "269"
+            endingLineNumber = "269"
+            landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
+            timestampString = "500363752.992063"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "296"
+            endingLineNumber = "296"
+            landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
+            timestampString = "500363752.992063"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "295"
+            endingLineNumber = "295"
+            landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
+            timestampString = "500363946.43499"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "258"
+            endingLineNumber = "258"
+            landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "cageDeformerARAP/cageDeformerARAP.cpp"
+            timestampString = "500363956.367872"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "260"
+            endingLineNumber = "260"
+            landmarkName = "CageDeformerNode::deform( MDataBlock&amp; data, MItGeometry&amp; itGeo, const MMatrix &amp;localToWorldMatrix, unsigned int mIndex )"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

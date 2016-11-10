@@ -97,18 +97,19 @@ class UI_CageDeformer:
             pm.button( l="Set selected as cage", c=pm.Callback( self.setCage, node))
             pm.attrControlGrp( label="cage mode", attribute= node.cgm)
             pm.attrControlGrp( label="blend mode", attribute= node.bm)
-        with pm.rowLayout(numberOfColumns=3) :
+        with pm.rowLayout(numberOfColumns=4) :
             pm.attrControlGrp( label="normalise cage tet", attribute= node.nr)
-            pm.attrControlGrp( label="symmetrise face", attribute= node.sf)
             pm.attrControlGrp( label="area weight", attribute= node.aw)
-        with pm.rowLayout(numberOfColumns=2) :
+            pm.attrControlGrp( label="positive weight", attribute= node.posw)
+            pm.attrControlGrp( label="normalise weight", attribute= node.nw)
+        with pm.rowLayout(numberOfColumns=3) :
             pm.attrControlGrp( label="rotation consistency", attribute= node.rc)
             pm.attrControlGrp( label="Frechet sum", attribute= node.fs)
+            pm.attrControlGrp( label="symmetrise face", attribute= node.sf)
         with pm.rowLayout(numberOfColumns=4) :
             pm.attrControlGrp( label="Weight mode", attribute= node.wtm)
             pm.attrControlGrp( label="normExponent", attribute=node.ne)
             pm.attrFieldSliderGrp(label="effect radius", min=0.001, max=20.0, attribute=node.er)
-            pm.attrControlGrp( label="normalise weight", attribute= node.nw)
 
 
     # delete deformer node

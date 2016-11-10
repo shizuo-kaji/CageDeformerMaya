@@ -21,17 +21,8 @@
 #include <vector>
 #include <map>
 
+#include "deformerConst.h"
 
-// tetrahedra construction mode
-#define TM_NONE -1
-#define TM_FACE 0
-#define TM_EDGE 1
-#define TM_VERTEX 2
-#define TM_VFACE 10   // for each vertex and an adjacent face, make a tet by adding the face normal to the vertex
-
-
-/// threshold for being zero
-//#define EPSILON 10e-6
 
 using namespace Eigen;
 
@@ -201,7 +192,7 @@ namespace Tetrise{
     // comptute tetrahedra weights from those of points
     void makeTetWeightList(short tetMode, const std::vector<int>& tetList,
                    const std::vector<int>& faceList, const std::vector<edge>& edgeList,
-                   const std::vector<vertex>& vertexList, const std::vector<double>& ptsWeight,
+                   const std::vector<vertex>& vertexList, const VectorXd& ptsWeight,
                    std::vector<double>& tetWeight ){
         int numTet = (int)tetList.size()/4;
         tetWeight.resize(numTet);
@@ -356,7 +347,6 @@ namespace Tetrise{
     void makeAdjacencyList(short tetMode, const std::vector<int>& tetList,
             const std::vector<edge>& edgeList, const std::vector<vertex>& vertexList,
                            std::vector< std::vector<int> >& adjacencyList){
-        adjacencyList.clear();
         adjacencyList.resize(tetList.size()/4);
         for(int i=0;i<adjacencyList.size();i++){
             adjacencyList[i].clear();
