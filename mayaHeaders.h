@@ -1,9 +1,9 @@
 //
 //  Copyright 2012 Autodesk, Inc.  All rights reserved.
 //
-//  Use of this software is subject to the terms of the Autodesk license
-//  agreement provided at the time of installation or download, or which
-//  otherwise accompanies this software in either electronic or hard copy form.
+//  Use of this software is subject to the terms of the Autodesk license 
+//  agreement provided at the time of installation or download, or which 
+//  otherwise accompanies this software in either electronic or hard copy form.   
 //
 
 //- Written by Cyrille Fauvel, Autodesk Developer Network (ADN)
@@ -28,15 +28,15 @@
 #if defined(NT_PLUGIN) && !defined(_MANAGED)
 #define EXPORT comment(linker, "/EXPORT:"__FUNCTION__"="__FUNCDNAME__)
 #else
-#define EXPORT
+#define EXPORT 
 #endif
 
 //-----------------------------------------------------------------------------
 #define MayaOk(a,b) \
-if ( !a ) { \
-    a.perror (b) ; \
-    return (a) ; \
-}
+	if ( !a ) { \
+	a.perror (b) ; \
+	return (a) ; \
+	}
 #define NodeRegisterOk(a) MayaOk(a,_T("registerNode"))
 #define NodeUnregisterOk(a) MayaOk(a,_T("deregisterNode"))
 
@@ -51,17 +51,10 @@ if ( !a ) { \
 #ifdef NT_PLUGIN
 #pragma comment (lib, "cg.lib")
 #pragma comment (lib, "cgGL.lib")
-#pragma comment (lib, "Cloth.lib")
 #pragma comment (lib, "Foundation.lib")
 #pragma comment (lib, "Image.lib")
 #pragma comment (lib, "IMFbase.lib")
 #pragma comment (lib, "libawxml2.lib")
-#pragma comment (lib, "libHalf.lib")
-#pragma comment (lib, "libIex.lib") // Link this always (2013 change). Otherwise: 4 missing symbols when linking
-#if !defined(_MANAGED)
-#pragma comment (lib, "libIlmImf.lib")
-#endif
-#pragma comment (lib, "libImath.lib")
 #pragma comment (lib, "libmocap.lib")
 #pragma comment (lib, "libzlib.lib")
 #pragma comment (lib, "OpenMaya.lib")
@@ -69,9 +62,6 @@ if ( !a ) { \
 #pragma comment (lib, "OpenMayaFX.lib")
 #pragma comment (lib, "OpenMayaRender.lib")
 #pragma comment (lib, "OpenMayaUI.lib")
-#ifdef _PYTHON_MODULE_
-#pragma comment (lib, "python26.lib")
-#endif
 #pragma comment (lib, "tbb.lib")
 #pragma comment (lib, "tbbmalloc.lib")
 #endif

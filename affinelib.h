@@ -550,6 +550,7 @@ namespace AffineLib{
         } while ((Prev-Curr).lpNorm<1>() > EPSILON*Prev.lpNorm<1>());
         R = Curr;
         S = m * Curr.transpose();
+        S = (S+S.transpose())/2;
         return iter;
     }
     

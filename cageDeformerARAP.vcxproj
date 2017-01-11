@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{67131301-2A24-437B-8B18-9498812D7B0E}</ProjectGuid>
-    <RootNamespace>cageDeformer</RootNamespace>
-    <ProjectName>cageDeformer</ProjectName>
+    <ProjectGuid>{F59575A6-D17F-4DA4-8AAB-AF4C670B5232}</ProjectGuid>
+    <RootNamespace>cageDeformerARAP</RootNamespace>
+    <ProjectName>cageDeformerARAP</ProjectName>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -66,10 +66,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="cageDeformer\cageDeformer.h" />
+    <ClInclude Include="cageDeformerARAP\cageDeformerARAP.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cageDeformer\cageDeformer.cpp" />
+    <ClCompile Include="cageDeformerARAP\cageDeformerARAP.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

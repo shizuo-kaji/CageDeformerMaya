@@ -17,6 +17,11 @@
 #define BM_AFF 10   // Aff(3)
 #define BM_OFF -1
 
+// weight normalisation mode
+#define NM_NONE 0
+#define NM_LINEAR 1
+#define NM_SOFTMAX 2
+
 // weight mode
 #define WM_INV_DISTANCE 0
 #define WM_CUTOFF_DISTANCE 1
@@ -39,6 +44,14 @@
 #define CM_MLS_SIM 17
 #define CM_MLS_RIGID 18
 
+// MLS mode
+#define MLS_OFF -1
+#define MLS_AFF 0
+#define MLS_RIGID 1
+#define MLS_SIM 2
+#define MLS_POSITIVE_DET 4
+
+
 // constraint mode
 #define CONSTRAINT_NEIGHBOUR 0
 #define CONSTRAINT_CLOSEST 1
@@ -59,6 +72,7 @@
 #define ERROR_ARAP_PRECOMPUTE 1
 #define INCOMPATIBLE_MESH 2
 #define ERROR_ATTR 4
+#define ERROR_MLS_SINGULAR 8
 
 
 #endif

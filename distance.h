@@ -16,7 +16,6 @@ class Distance {
 public:
     std::vector< std::vector<double> > distPts, distTet;   // [i,j]-entry is the distance to the i-th handle to j-th element
     std::vector<int> closestPts, closestTet;               // [i]-entry is the index of the closest element to i-th handle
-    std::vector<Vector3d> tetCenter;                      // [j]-entry is the coordinate of the centre of j-th mesh tetrahedron
     int nHdl, nPts, nTet;
     Distance(){};
     Distance(int _nHandle, int _nPts, int _nTet) {
@@ -26,12 +25,14 @@ public:
     void findClosestPts();
     void findClosestTet();
     void computeCageDistPts(short cageMode, const std::vector<Vector3d>& pts, const std::vector<Vector3d>& cagePts, const std::vector<int>& cageTetList);
-    void computeCageDistTet(short cageMode, const std::vector<Vector3d>& cagePts, const std::vector<int>& cageTetList);
+    void computeCageDistTet(short cageMode, const std::vector<Vector3d>& tetCenter, const std::vector<Vector3d>& cagePts, const std::vector<int>& cageTetList);
     void computeDistPts(const std::vector<Vector3d>& pts, const std::vector<Vector3d>& hdlPts);
+    void computeDistTet(const std::vector<Vector3d>& tetCenter, const std::vector<Vector3d>& hdlPts);
     double distPtLin(Vector3d p,Vector3d a,Vector3d b);
     double distPtTri(Vector3d p,Vector3d a,Vector3d b,Vector3d c);
     void MVC(const std::vector<Vector3d>& pts, const std::vector<Vector3d>& cagePts,
                        const std::vector<int>& cageFaceList, std::vector< std::vector<double> >& w);
+    void normaliseWeight(short mode, std::vector<double>& w);
 };
 
 // initialise
@@ -54,6 +55,15 @@ void Distance::computeDistPts(const std::vector<Vector3d>& pts, const std::vecto
     for(int i=0;i<nHdl;i++){
         for(int j=0;j<nPts;j++){
             distPts[i][j] = (pts[j]-hdlPts[i]).norm();
+        }
+    }
+}
+
+// distance between probe handles and mesh tet
+void Distance::computeDistTet(const std::vector<Vector3d>& tetCenter, const std::vector<Vector3d>& hdlPts){
+    for(int i=0;i<nHdl;i++){
+        for(int j=0;j<nTet;j++){
+            distTet[i][j] = (tetCenter[j]-hdlPts[i]).norm();
         }
     }
 }
@@ -109,7 +119,7 @@ void Distance::computeCageDistPts(short cageMode, const std::vector<Vector3d>& p
 }
 
 // distance between cage and mesh tet
-void Distance::computeCageDistTet(short cageMode, const std::vector<Vector3d>& cagePts, const std::vector<int>& cageTetList){
+void Distance::computeCageDistTet(short cageMode, const std::vector<Vector3d>& tetCenter, const std::vector<Vector3d>& cagePts, const std::vector<int>& cageTetList){
     switch (cageMode){
         case TM_FACE:
         {
@@ -260,3 +270,22 @@ void Distance::MVC(const std::vector<Vector3d>& pts, const std::vector<Vector3d>
     }
 }
 
+// normalise weights
+void Distance::normaliseWeight(short mode, std::vector<double>& w){
+    if(mode == NM_NONE || mode == NM_LINEAR){
+        double sum = std::accumulate(w.begin(), w.end(), 0.0);
+        if ((sum > 1 || mode == NM_LINEAR) && sum != 0.0){
+            for (int i = 0; i < w.size(); i++){
+                w[i] /= sum;
+            }
+        }
+    }else if(mode == NM_SOFTMAX){
+        double sum = 0.0;
+        for (int i = 0; i < w.size(); i++){
+            sum += exp(w[i]);
+        }
+        for (int i = 0; i < w.size(); i++){
+            w[i] = exp(w[i])/sum;
+        }
+    }
+}

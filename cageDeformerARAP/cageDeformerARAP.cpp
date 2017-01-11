@@ -107,10 +107,11 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
             pts[j] << Mpts[j].x, Mpts[j].y, Mpts[j].z;
         }
         // make tetrahedral structure
+        std::vector<Vector3d> tetCenter;
         getMeshData(data, input, inputGeom, mIndex, tetMode, pts, mesh.tetList, faceList, edgeList, vertexList, mesh.tetMatrix, mesh.tetWeight);
         mesh.dim = removeDegenerate(tetMode, numPts, mesh.tetList, faceList, edgeList, vertexList, mesh.tetMatrix);
         makeTetMatrix(tetMode, pts, mesh.tetList, faceList, edgeList, vertexList, mesh.tetMatrix, mesh.tetWeight);
-        makeTetCenterList(tetMode, pts, mesh.tetList, D.tetCenter);
+        makeTetCenterList(tetMode, pts, mesh.tetList, tetCenter);
         mesh.numTet = (int)mesh.tetList.size()/4;
         mesh.computeTetMatrixInverse();
         
@@ -142,7 +143,7 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         
         D.setNum(numCageTet, numPts, mesh.numTet);
         D.computeCageDistPts(cageMode, pts, initCagePts, cageTetList);
-        D.computeCageDistTet(cageMode, initCagePts, cageTetList);
+        D.computeCageDistTet(cageMode, tetCenter, initCagePts, cageTetList);
         D.findClosestPts();
         D.findClosestTet();
         
@@ -181,9 +182,9 @@ MStatus CageDeformerNode::deform( MDataBlock& data, MItGeometry& itGeo, const MM
         }
         if( constraintMode == CONSTRAINT_NEIGHBOUR ){
             for(int i=0;i<numCageTet;i++){
-                for(int j=0;j<mesh.numTet;j++){
-                    if(D.distTet[i][j]<constraintRadius){
-                        constraint.push_back(T(i,j,strength[i] * pow((constraintRadius-D.distTet[i][j])/constraintRadius,normExponent)));
+                for(int j=0;j<numPts;j++){
+                    if(D.distPts[i][j]<constraintRadius){
+                        constraint.push_back(T(i,j,strength[i] * pow((constraintRadius-D.distPts[i][j])/constraintRadius,normExponent)));
                     }
                 }
             }

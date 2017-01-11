@@ -16,7 +16,7 @@
 //----- _MAYA_VP2_ to include and import Maya Viewport 2.0 headers and libs in your project.
 //#define _MAYA_VP2_
 
-#include "mayaHeaders.h"
+#include "../mayaHeaders.h"
 #ifdef NT_PLUGIN
 #include <tchar.h>
 #else

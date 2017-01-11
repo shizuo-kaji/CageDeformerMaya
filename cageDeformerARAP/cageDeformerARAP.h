@@ -21,13 +21,13 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Sparse>
 
-#include "affinelib.h"
-#include "tetrise.h"
-#include "deformerConst.h"
-#include "MeshMaya.h"
-#include "laplacian.h"
-#include "blendAff.h"
-#include "distance.h"
+#include "../affinelib.h"
+#include "../tetrise.h"
+#include "../deformerConst.h"
+#include "../MeshMaya.h"
+#include "../laplacian.h"
+#include "../blendAff.h"
+#include "../distance.h"
 
 typedef Eigen::SparseMatrix<double> SpMat;
 typedef Eigen::Triplet<double> T;

@@ -159,6 +159,19 @@ void readMatrixArray(MArrayDataHandle& handle, std::vector<Matrix4d>& m){
     }
 }
 
+// read array of vector attributes into Eigen vectors
+void readVectorArray(MArrayDataHandle& handle, std::vector<Vector3d>& V){
+    int num=handle.elementCount();
+    V.resize(num);
+    MVector v;
+    for(int i=0;i<num;i++){
+        handle.jumpToArrayElement(i);
+        v=handle.inputValue().asVector();
+        V[i] << v(0), v(1), v(2);
+    }
+}
+
+
 ////
 void outputAttr(MDataBlock& data, MObject& attribute, std::vector<double>& values){
     MStatus status;

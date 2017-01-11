@@ -16,6 +16,7 @@ one is simple, and the other adds ARAP modifiation.
 
 ## How to compile:
 - Mac OS X: Look at the included Xcode project file
+- Windows: Look at the included VisualStudio project file. __DO NOT__ turn on AVX instructions.
 - Other: Look at the included Makefile
 
 ## How to use:
@@ -23,8 +24,10 @@ one is simple, and the other adds ARAP modifiation.
 - put the UI python script in "MAYA_SCRIPT_PATH"
 - open script editor in Maya and type in the following Python command:
 
-    import ui_cageDeformer as ui
-    ui.UI_CageDeformer()
+```python
+import ui_cageDeformer as ui
+ui.UI_CageDeformer()
+```
 
 ## LIMITATION:
 The ARAP version works only on "clean" meshes.

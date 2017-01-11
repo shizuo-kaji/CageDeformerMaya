@@ -1,10 +1,3 @@
-//
-//  StdAfx.h
-//  cageDeformerARAP
-//
-//  Created by 鍛冶 静雄 on 2014/05/12.
-//    Copyright (c) 2014年 mcg-q. All rights reserved.
-//
 
 //-----------------------------------------------------------------------------
 //- StdAfx.h : include file for standard system include files,
@@ -23,7 +16,7 @@
 //----- _MAYA_VP2_ to include and import Maya Viewport 2.0 headers and libs in your project.
 //#define _MAYA_VP2_
 
-#include "mayaHeaders.h"
+#include "../mayaHeaders.h"
 #ifdef NT_PLUGIN
 #include <tchar.h>
 #else
