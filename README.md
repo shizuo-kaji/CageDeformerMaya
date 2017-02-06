@@ -5,8 +5,6 @@ ProbeDeformer plugins for Maya
  * @section requirements:  Eigen 3:  http://eigen.tuxfamily.org/
  * @section Autodesk Maya: http://www.autodesk.com/products/autodesk-maya/overview
  * @section (included) AffineLib: https://github.com/shizuo-kaji/AffineLib
- * @version 0.20
- * @date  19/Sep/2016
  * @author Shizuo KAJI
  */
 
@@ -18,6 +16,7 @@ one is simple, and the other adds ARAP modifiation.
 - Mac OS X: Look at the included Xcode project file
 - Windows: Look at the included VisualStudio project file. __DO NOT__ turn on AVX instructions.
 - Other: Look at the included Makefile
+- on some systems, specifying the compiler option -DEIGEN_DONT_VECTORIZE may be necessary to avoid compilation errors (thank giordi91 for this information)
 
 ## How to use:
 - put the plugins in "MAYA_PLUG_IN_PATH"

@@ -28,9 +28,11 @@
 
 #include <cmath>
 #include <iostream>
-#include <cassert>
 #include <vector>
 
+// disable assert lines
+#define NDEBUG
+#include <cassert>
 
 /// threshold for small values to be regarded zero
 #define EPSILON 10e-15
