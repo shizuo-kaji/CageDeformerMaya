@@ -386,8 +386,6 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
-					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
-					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
 					"-lOpenMaya",
 					"-lOpenMayaAnim",
 					"-lOpenMayaRender",
@@ -422,8 +420,6 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
-					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
-					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
 					"-lOpenMaya",
 					"-lOpenMayaAnim",
 					"-lOpenMayaRender",
@@ -459,8 +455,6 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
-					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
-					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
 					"-lOpenMaya",
 					"-lOpenMayaAnim",
 					"-lOpenMayaRender",
@@ -495,8 +489,6 @@
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"-Wl,-executable_path,$(MAYA_LOCATION)/Maya.app/Contents/MacOS",
-					"-Wl,-exported_symbol,__Z16initializePlugin7MObject",
-					"-Wl,-exported_symbol,__Z18uninitializePlugin7MObject",
 					"-lOpenMaya",
 					"-lOpenMayaAnim",
 					"-lOpenMayaRender",

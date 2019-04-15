@@ -13,6 +13,7 @@ There are two versions of deformers;
 one is simple, and the other adds ARAP modifiation.
 
 ## How to compile:
+- Get devkit at https://www.autodesk.com/developmaya
 - Mac OS X: Look at the included Xcode project file
 - Windows: Look at the included VisualStudio project file. __DO NOT__ turn on AVX instructions.
 - Other: Look at the included Makefile
